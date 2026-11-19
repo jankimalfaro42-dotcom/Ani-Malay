@@ -19,6 +19,7 @@ const messageRoutes = require('./routes/messageRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 
 const app = express()
+const PORT = process.env.PORT || 5000
 
 app.use(cors())
 app.use(express.json())
@@ -38,7 +39,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/payments', paymentRoutes)
 
 app.use('/api/deliveries', deliveryRoutes)
-console.log(`🚀 Delivery routes registered on port ${PORT}`)
+console.log(`Delivery routes registered on port ${PORT}`)
 
 // Temporary delivery test route
 app.get('/api/deliveries-test', (req, res) => {
@@ -54,6 +55,7 @@ app.use('/api/verification', verificationRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/riders', riderRoutes)
 app.use('/api/messages', messageRoutes)
+
 // Main test route
 app.get('/', (req, res) => {
   res.json({
@@ -68,8 +70,6 @@ app.use((req, res) => {
     path: req.originalUrl,
   })
 })
-
-const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () => {
   console.log(`🚀 Ani-Malay Backend running on port ${PORT}`)
