@@ -1,5 +1,4 @@
 require('dotenv').config()
-require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const db = require('./db')
@@ -39,7 +38,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/payments', paymentRoutes)
 
 app.use('/api/deliveries', deliveryRoutes)
-console.log('Delivery routes registered')
+console.log(`🚀 Delivery routes registered on port ${PORT}`)
 
 // Temporary delivery test route
 app.get('/api/deliveries-test', (req, res) => {
