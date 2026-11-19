@@ -1,0 +1,408 @@
+
+/* ================================
+   ANI-MALAY MESSAGES PAGE
+================================ */
+
+.messages-page {
+  width: 100%;
+  min-height: calc(100vh - 80px);
+  padding: 40px 20px 60px;
+  background: #f5f7f4;
+  box-sizing: border-box;
+  color: #26352b;
+}
+
+.messages-card {
+  width: 100%;
+  max-width: 900px;
+  min-height: 620px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e2e9e2;
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(31, 71, 45, 0.08);
+}
+
+/* ================================
+   HEADER
+================================ */
+
+.messages-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 26px 30px;
+  background: #2d7752;
+  color: #ffffff;
+}
+
+.messages-icon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.messages-header-info {
+  min-width: 0;
+}
+
+.messages-header h1 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.messages-header p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ================================
+   ADMIN ONLINE / OFFLINE STATUS
+================================ */
+
+.consumer-admin-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 11px;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.consumer-admin-presence-dot {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #b8c2bb;
+}
+
+/* ONLINE */
+
+.consumer-admin-presence.online
+.consumer-admin-presence-dot {
+  background: #5cff91;
+  box-shadow: 0 0 0 3px rgba(92, 255, 145, 0.16);
+  animation: consumer-online-pulse 1.8s ease-in-out infinite;
+}
+
+/* OFFLINE */
+
+.consumer-admin-presence.offline
+.consumer-admin-presence-dot {
+  background: #c2c9c4;
+  box-shadow: 0 0 0 3px rgba(194, 201, 196, 0.13);
+}
+
+/* CHECKING */
+
+.consumer-admin-presence.checking
+.consumer-admin-presence-dot {
+  background: #ffd36a;
+  box-shadow: 0 0 0 3px rgba(255, 211, 106, 0.15);
+  animation: consumer-status-blink 1s ease-in-out infinite;
+}
+
+@keyframes consumer-online-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(92, 255, 145, 0.16);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(92, 255, 145, 0.04);
+  }
+}
+
+@keyframes consumer-status-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ================================
+   INFORMATION NOTICE
+================================ */
+
+.messages-notice {
+  margin: 22px 26px 0;
+  padding: 14px 17px;
+  border: 1px solid #dcebdd;
+  border-radius: 10px;
+  background: #f0f7f0;
+  color: #42644b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ================================
+   MESSAGE HISTORY
+================================ */
+
+.messages-list {
+  flex: 1;
+  min-height: 300px;
+  max-height: 480px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 22px 26px;
+  padding: 20px;
+  border: 1px solid #edf0ed;
+  border-radius: 12px;
+  background: #fafcf9;
+}
+
+.messages-empty {
+  margin: auto;
+  max-width: 360px;
+  text-align: center;
+  color: #7b877d;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* ================================
+   MESSAGE BUBBLES
+================================ */
+
+.message-bubble {
+  max-width: 75%;
+  padding: 12px 15px;
+  border-radius: 14px;
+  overflow-wrap: anywhere;
+}
+
+.message-own {
+  align-self: flex-end;
+  background: #2d7752;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.message-admin {
+  align-self: flex-start;
+  background: #eaf1e9;
+  color: #293b2e;
+  border-bottom-left-radius: 4px;
+}
+
+.message-sender {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.message-bubble p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.message-bubble time {
+  display: block;
+  margin-top: 8px;
+  font-size: 10px;
+  text-align: right;
+  opacity: 0.75;
+}
+
+/* ================================
+   ERROR MESSAGE
+================================ */
+
+.messages-error {
+  margin: 0 26px 16px;
+  padding: 12px 15px;
+  border: 1px solid #f1caca;
+  border-radius: 9px;
+  background: #fff1f1;
+  color: #a32626;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ================================
+   MESSAGE INPUT
+================================ */
+
+.messages-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 20px 26px 26px;
+  border-top: 1px solid #edf0ed;
+  background: #ffffff;
+}
+
+.messages-form textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  max-height: 150px;
+  resize: vertical;
+  padding: 14px 15px;
+  border: 1px solid #d8e1d8;
+  border-radius: 12px;
+  outline: none;
+  background: #fafcf9;
+  color: #26352b;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.messages-form textarea::placeholder {
+  color: #929b93;
+}
+
+.messages-form textarea:focus {
+  border-color: #2d7752;
+  box-shadow: 0 0 0 3px rgba(45, 119, 82, 0.1);
+}
+
+.messages-form button {
+  min-height: 48px;
+  flex-shrink: 0;
+  padding: 0 22px;
+  border: none;
+  border-radius: 10px;
+  background: #2d7752;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.messages-form button:hover:not(:disabled) {
+  background: #225e40;
+  transform: translateY(-1px);
+}
+
+.messages-form button:disabled {
+  background: #a9bbae;
+  cursor: not-allowed;
+}
+
+/* ================================
+   SCROLLBAR
+================================ */
+
+.messages-list::-webkit-scrollbar {
+  width: 7px;
+}
+
+.messages-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-list::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #cbd8cb;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+================================ */
+
+@media (max-width: 600px) {
+  .messages-page {
+    padding: 20px 12px 35px;
+  }
+
+  .messages-card {
+    min-height: 560px;
+    border-radius: 14px;
+  }
+
+  .messages-header {
+    gap: 12px;
+    padding: 21px 17px;
+  }
+
+  .messages-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .messages-header h1 {
+    font-size: 22px;
+  }
+
+  .messages-header p {
+    font-size: 12px;
+  }
+
+  .consumer-admin-presence {
+    margin-top: 9px;
+    font-size: 11px;
+  }
+
+  .messages-notice {
+    margin: 16px 14px 0;
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .messages-list {
+    min-height: 280px;
+    margin: 16px 14px;
+    padding: 13px;
+  }
+
+  .message-bubble {
+    max-width: 88%;
+  }
+
+  .messages-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 16px 14px 20px;
+  }
+
+  .messages-form textarea {
+    width: 100%;
+  }
+
+  .messages-form button {
+    width: 100%;
+  }
+
+  .messages-error {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+}

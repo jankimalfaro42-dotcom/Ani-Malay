@@ -1,0 +1,591 @@
+/* =========================================
+   LIVESTOCK PAGE
+========================================= */
+
+.livestock-page {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 92px);
+  padding: 35px 5% 50px;
+
+  background-image:
+    linear-gradient(
+      rgba(247, 249, 245, 0.88),
+      rgba(247, 249, 245, 0.94)
+    ),
+    url('/images/municipality-hall.jpg');
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+
+/* =========================================
+   LIVESTOCK CONTROLS
+========================================= */
+
+.livestock-controls {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  gap: 25px;
+  margin-bottom: 22px;
+}
+
+
+/* =========================================
+   SEARCH
+========================================= */
+
+.livestock-search {
+  width: 300px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 0 15px;
+
+  background: rgba(255, 255, 255, 0.96);
+
+  border: 1px solid #dfe5dc;
+  border-radius: 9px;
+
+  color: #6c796f;
+
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.07);
+
+  transition: 0.2s ease;
+}
+
+.livestock-search:focus-within {
+  border-color: #78a55b;
+
+  box-shadow:
+    0 0 0 3px rgba(120, 165, 91, 0.12);
+}
+
+.livestock-search input {
+  width: 100%;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  font-family: inherit;
+  color: #173b24;
+
+  font-size: 14px;
+}
+
+.livestock-search input::placeholder {
+  color: #89938b;
+}
+
+
+/* =========================================
+   CATEGORIES
+========================================= */
+
+.livestock-categories {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.livestock-category-btn {
+  height: 42px;
+
+  padding: 0 18px;
+
+  border: 1px solid #dce3d8;
+
+  background: rgba(255, 255, 255, 0.96);
+
+  color: #58645b;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+
+  white-space: nowrap;
+}
+
+.livestock-category-btn:hover {
+  border-color: #7ca55e;
+  color: #064d23;
+}
+
+.livestock-category-btn.active {
+  background: #064d23;
+  color: white;
+  border-color: #064d23;
+}
+
+
+/* =========================================
+   HEADING
+========================================= */
+
+.livestock-heading {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  text-align: left;
+
+  margin-bottom: 20px;
+}
+
+.livestock-heading h1 {
+  color: #173b24;
+
+  font-size: 28px;
+  font-weight: 800;
+
+  margin-bottom: 4px;
+}
+
+.livestock-heading p {
+  color: #69746c;
+
+  font-size: 13px;
+}
+
+
+/* =========================================
+   LIVESTOCK GRID
+========================================= */
+
+.livestock-grid {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+
+/* =========================================
+   LIVESTOCK CARD
+========================================= */
+
+.livestock-card {
+  min-width: 0;
+
+  background: rgba(255, 255, 255, 0.97);
+
+  border: 1px solid #e2e7df;
+
+  border-radius: 12px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.06);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.livestock-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.10);
+}
+
+
+/* =========================================
+   LIVESTOCK IMAGE
+========================================= */
+
+.livestock-image {
+  height: 155px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #eef4e5,
+      #dfead5
+    );
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+
+  overflow: hidden;
+}
+
+.livestock-image img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+.livestock-image span {
+  position: absolute;
+
+  bottom: 9px;
+  left: 9px;
+
+  padding: 5px 9px;
+
+  background: rgba(255, 255, 255, 0.88);
+
+  border-radius: 20px;
+
+  color: #55704c;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+
+/* =========================================
+   LIVESTOCK INFORMATION
+========================================= */
+
+.livestock-info {
+  padding: 14px;
+}
+
+.livestock-category {
+  color: #789071;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  margin-bottom: 5px;
+}
+
+.livestock-info h2 {
+  color: #173b24;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  margin-bottom: 14px;
+}
+
+
+/* =========================================
+   LIVESTOCK BOTTOM
+========================================= */
+
+.livestock-bottom {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+}
+
+.livestock-bottom strong {
+  color: #064d23;
+
+  font-size: 13px;
+}
+
+
+/* =========================================
+   LIVESTOCK CART BUTTON
+========================================= */
+
+.livestock-cart-btn {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+
+  background: #064d23;
+  color: white;
+
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.livestock-cart-btn:hover {
+  background: #0a6b32;
+
+  transform: translateY(-1px);
+}
+
+
+/* =========================================
+   NO LIVESTOCK
+========================================= */
+
+.no-livestock {
+  grid-column: 1 / -1;
+
+  min-height: 300px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  color: #75906e;
+
+  text-align: center;
+}
+
+.no-livestock h3 {
+  margin-top: 12px;
+
+  color: #173b24;
+
+  font-size: 18px;
+}
+
+.no-livestock p {
+  margin-top: 5px;
+
+  color: #788279;
+
+  font-size: 13px;
+}
+
+
+/* =========================================
+   LIVESTOCK LAPTOP
+========================================= */
+
+@media (min-width: 901px) and (max-width: 1199px) {
+
+  .livestock-page {
+    min-height: calc(100vh - 82px);
+
+    padding: 28px 4% 40px;
+  }
+
+  .livestock-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+    gap: 14px;
+  }
+
+  .livestock-image {
+    height: 140px;
+  }
+
+  .livestock-controls {
+    gap: 15px;
+  }
+
+  .livestock-search {
+    width: 270px;
+  }
+
+  .livestock-category-btn {
+    padding: 0 12px;
+
+    font-size: 12px;
+  }
+}
+
+
+/* =========================================
+   LIVESTOCK TABLET
+========================================= */
+
+@media (max-width: 900px) {
+
+  .livestock-page {
+    min-height: calc(100vh - 80px);
+
+    padding: 25px 5% 40px;
+
+    background-attachment: scroll;
+  }
+
+  .livestock-controls {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .livestock-search {
+    width: 100%;
+  }
+
+  .livestock-categories {
+    justify-content: flex-start;
+
+    flex-wrap: wrap;
+  }
+
+  .livestock-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .livestock-image {
+    height: 145px;
+  }
+}
+
+
+/* =========================================
+   LIVESTOCK MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .livestock-page {
+    min-height: calc(100vh - 70px);
+
+    padding: 22px 4% 35px;
+
+    background-attachment: scroll;
+  }
+
+  .livestock-heading h1 {
+    font-size: 25px;
+  }
+
+  .livestock-heading p {
+    font-size: 12px;
+  }
+
+  .livestock-categories {
+    overflow-x: auto;
+
+    flex-wrap: nowrap;
+
+    padding-bottom: 4px;
+  }
+
+  .livestock-category-btn {
+    flex-shrink: 0;
+  }
+
+  .livestock-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+  }
+
+  .livestock-image {
+    height: 130px;
+  }
+
+  .livestock-info {
+    padding: 11px;
+  }
+
+  .livestock-info h2 {
+    font-size: 14px;
+  }
+
+  .livestock-bottom strong {
+    font-size: 11px;
+  }
+
+  .livestock-cart-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+
+/* =========================================
+   VERY SMALL PHONE
+========================================= */
+
+@media (max-width: 380px) {
+
+  .livestock-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .livestock-image {
+    height: 160px;
+  }
+}
+/* =========================================
+   FISHERIES PAGE
+========================================= */
+
+.fisheries-page {
+  position: relative;
+
+  width: 100%;
+
+  min-height: calc(100vh - 92px);
+
+  padding: 35px 5% 50px;
+
+  background-image:
+    linear-gradient(
+      rgba(247, 249, 245, 0.88),
+      rgba(247, 249, 245, 0.94)
+    ),
+    url('/images/municipality-hall.jpg');
+
+  background-size: cover;
+
+  background-position: center;
+
+  background-repeat: no-repeat;
+
+  background-attachment: fixed;
+}
+
+
+/* =========================================
+   FISHERIES CONTROLS
+========================================= */
+
+.fisheries-controls {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-start;
+
+  gap: 25px;
+
+  margin-bottom: 22px;
+}

@@ -1,0 +1,131 @@
+
+/* ==================================
+   ANI-MALAY GLOBAL NOTIFICATIONS
+================================== */
+
+.ani-toast {
+  position: fixed;
+  top: 85px;
+  right: 24px;
+  z-index: 99999;
+
+  width: min(380px, calc(100% - 32px));
+  min-height: 76px;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  padding: 16px;
+  border-radius: 12px;
+
+  background: #ffffff;
+  border: 1px solid #e5eae5;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.13);
+
+  animation: aniToastIn 0.3s ease;
+}
+
+.ani-toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ani-toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ani-toast-content strong {
+  display: block;
+  color: #263b2d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ani-toast-content p {
+  margin: 4px 0 0;
+  color: #718075;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ani-toast-close {
+  border: none;
+  background: transparent;
+  color: #89938b;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-self: flex-start;
+}
+
+.ani-toast-close:hover {
+  color: #263b2d;
+}
+
+/* SUCCESS */
+
+.ani-toast-success {
+  border-left: 4px solid #2d7752;
+}
+
+.ani-toast-success .ani-toast-icon {
+  color: #2d7752;
+}
+
+/* ERROR */
+
+.ani-toast-error {
+  border-left: 4px solid #dc4545;
+}
+
+.ani-toast-error .ani-toast-icon {
+  color: #dc4545;
+}
+
+/* WARNING */
+
+.ani-toast-warning {
+  border-left: 4px solid #e4a12c;
+}
+
+.ani-toast-warning .ani-toast-icon {
+  color: #e4a12c;
+}
+
+/* INFO */
+
+.ani-toast-info {
+  border-left: 4px solid #4386c6;
+}
+
+.ani-toast-info .ani-toast-icon {
+  color: #4386c6;
+}
+
+/* ANIMATION */
+
+@keyframes aniToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(25px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  .ani-toast {
+    top: 16px;
+    right: 12px;
+    width: calc(100% - 24px);
+  }
+}

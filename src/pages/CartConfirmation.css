@@ -1,0 +1,193 @@
+
+/* =====================================
+   CART DELETE CONFIRMATION
+===================================== */
+
+.cart-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(20, 35, 25, 0.48);
+  backdrop-filter: blur(3px);
+
+  animation: cartOverlayIn 0.2s ease;
+}
+
+.cart-confirm-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 410px;
+
+  padding: 30px 26px 25px;
+
+  background: #ffffff;
+  border-radius: 18px;
+
+  text-align: center;
+
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.18);
+
+  animation: cartDialogIn 0.25s ease;
+}
+
+.cart-confirm-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #f2f5f2;
+  color: #69766c;
+
+  cursor: pointer;
+}
+
+.cart-confirm-icon {
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 17px;
+
+  border-radius: 50%;
+
+  background: #fff1ed;
+  color: #d95b45;
+}
+
+.cart-confirm-dialog h2 {
+  margin: 0 0 10px;
+
+  color: #24382a;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.cart-confirm-dialog p {
+  margin: 0 auto;
+
+  color: #738077;
+  font-size: 14px;
+  line-height: 1.6;
+
+  overflow-wrap: anywhere;
+}
+
+.cart-confirm-dialog p strong {
+  color: #354b3b;
+}
+
+.cart-confirm-actions {
+  display: flex;
+  gap: 11px;
+
+  margin-top: 25px;
+}
+
+.cart-confirm-actions button {
+  flex: 1;
+
+  min-height: 45px;
+  padding: 10px 14px;
+
+  border-radius: 9px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.cart-confirm-cancel {
+  border: 1px solid #dce5dd;
+  background: #ffffff;
+  color: #405347;
+}
+
+.cart-confirm-cancel:hover {
+  background: #f4f7f4;
+}
+
+.cart-confirm-delete {
+  border: none;
+  background: #d94c43;
+  color: #ffffff;
+}
+
+.cart-confirm-delete:hover {
+  background: #bd3932;
+}
+
+.cart-confirm-actions button:disabled,
+.cart-confirm-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes cartOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cartDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* MOBILE */
+
+@media (max-width: 480px) {
+  .cart-confirm-overlay {
+    padding: 16px;
+  }
+
+  .cart-confirm-dialog {
+    padding: 27px 19px 20px;
+    border-radius: 16px;
+  }
+
+  .cart-confirm-dialog h2 {
+    font-size: 20px;
+  }
+
+  .cart-confirm-actions {
+    gap: 8px;
+  }
+
+  .cart-confirm-actions button {
+    font-size: 12px;
+    padding: 10px 8px;
+  }
+}

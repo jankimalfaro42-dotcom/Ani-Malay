@@ -1,0 +1,363 @@
+
+.ani-loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, #ffffff 0%, transparent 48%),
+    linear-gradient(145deg, #e5efe2 0%, #f8f7ec 52%, #dce9d9 100%);
+}
+
+.loading-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 25px;
+  animation: contentAppear 1s ease both;
+}
+
+/* PALAY SCENE */
+
+.palay-scene {
+  position: relative;
+  width: 250px;
+  height: 205px;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.palay-glow {
+  position: absolute;
+  width: 180px;
+  height: 150px;
+  bottom: 20px;
+  border-radius: 50%;
+  background: rgba(213, 190, 103, 0.16);
+  filter: blur(25px);
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* PALAY STALKS */
+
+.palay-stalk {
+  position: absolute;
+  bottom: 25px;
+  width: 5px;
+  height: 0;
+  border-radius: 10px;
+  background: linear-gradient(to top, #497c3e, #83a94c);
+  transform-origin: bottom center;
+  animation: growPalay 1.8s ease-out forwards,
+             swayPalay 3s 1.8s ease-in-out infinite;
+}
+
+.stalk-left {
+  left: 76px;
+  height: 112px;
+  animation-delay: 0.2s, 2s;
+  transform: rotate(-15deg);
+}
+
+.stalk-center {
+  left: 122px;
+  height: 155px;
+  animation-delay: 0.5s, 2.3s;
+}
+
+.stalk-right {
+  left: 168px;
+  height: 125px;
+  animation-delay: 0.8s, 2.6s;
+  transform: rotate(15deg);
+}
+
+/* LEAVES */
+
+.palay-leaf {
+  position: absolute;
+  width: 75px;
+  height: 20px;
+  background: linear-gradient(90deg, #3d7540, #83ad52);
+  border-radius: 100% 0 100% 0;
+  opacity: 0;
+  transform-origin: 0 50%;
+  animation: leafAppear 0.8s ease-out forwards;
+}
+
+.leaf-one {
+  bottom: 48px;
+  left: 0;
+  transform: rotate(-28deg);
+  animation-delay: 1.3s;
+}
+
+.leaf-two {
+  bottom: 82px;
+  left: 0;
+  transform: rotate(205deg);
+  animation-delay: 1.6s;
+}
+
+.stalk-center .leaf-one {
+  animation-delay: 1.5s;
+}
+
+.stalk-center .leaf-two {
+  animation-delay: 1.8s;
+}
+
+/* GOLDEN PALAY GRAINS */
+
+.palay-head {
+  position: absolute;
+  top: -14px;
+  left: -2px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transform: rotate(-25deg);
+  opacity: 0;
+  animation: grainAppear 0.8s 1.9s ease forwards;
+}
+
+.palay-grain {
+  display: block;
+  width: 16px;
+  height: 8px;
+  border-radius: 100% 15% 100% 15%;
+  background: linear-gradient(135deg, #f4d66f, #c99523);
+  box-shadow: 0 1px 3px rgba(135, 101, 22, 0.15);
+}
+
+.palay-grain:nth-child(even) {
+  margin-left: 10px;
+}
+
+.stalk-left .palay-head {
+  animation-delay: 1.6s;
+}
+
+.stalk-right .palay-head {
+  animation-delay: 1.8s;
+}
+
+/* GROUND */
+
+.palay-ground {
+  position: absolute;
+  bottom: 20px;
+  width: 150px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #8b7046, #c5a16b, #8b7046);
+  box-shadow: 0 7px 15px rgba(81, 103, 62, 0.12);
+}
+
+/* BRANDING */
+
+.loading-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: brandAppear 1s 1.5s ease both;
+}
+
+.loading-logo {
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+  border-radius: 18px;
+  margin: 8px 0 9px;
+  box-shadow: 0 5px 18px rgba(45, 119, 82, 0.12);
+}
+
+.loading-brand h1 {
+  color: #2d7752;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.loading-tagline {
+  color: #789078;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  margin: 9px 0 0;
+}
+
+/* RICE GRAIN LOADER */
+
+.grain-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 32px;
+  height: 20px;
+}
+
+.loading-grain {
+  display: block;
+  width: 9px;
+  height: 15px;
+  border-radius: 100% 15% 100% 15%;
+  background: #d5a52f;
+  opacity: 0.25;
+  transform: scale(0.65) rotate(-35deg);
+  animation: grainLoading 1.1s ease-in-out infinite;
+}
+
+.loading-grain:nth-child(2) { animation-delay: 0.12s; }
+.loading-grain:nth-child(3) { animation-delay: 0.24s; }
+.loading-grain:nth-child(4) { animation-delay: 0.36s; }
+.loading-grain:nth-child(5) { animation-delay: 0.48s; }
+.loading-grain:nth-child(6) { animation-delay: 0.60s; }
+.loading-grain:nth-child(7) { animation-delay: 0.72s; }
+.loading-grain:nth-child(8) { animation-delay: 0.84s; }
+.loading-grain:nth-child(9) { animation-delay: 0.96s; }
+
+.loading-message {
+  color: #66836a;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: 12px;
+}
+
+/* ANIMATIONS */
+
+@keyframes growPalay {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--final-height, 130px);
+  }
+}
+
+.stalk-left {
+  --final-height: 112px;
+}
+
+.stalk-center {
+  --final-height: 155px;
+}
+
+.stalk-right {
+  --final-height: 125px;
+}
+
+@keyframes swayPalay {
+  0%, 100% {
+    rotate: -2deg;
+  }
+  50% {
+    rotate: 3deg;
+  }
+}
+
+@keyframes leafAppear {
+  from {
+    opacity: 0;
+    scale: 0.2;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes grainAppear {
+  from {
+    opacity: 0;
+    transform: rotate(-25deg) scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-25deg) scale(1);
+  }
+}
+
+@keyframes grainLoading {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.65) rotate(-35deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(-35deg);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes brandAppear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes contentAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* MOBILE RESPONSIVENESS */
+
+@media (max-width: 480px) {
+  .palay-scene {
+    transform: scale(0.9);
+    margin-bottom: -5px;
+  }
+
+  .loading-brand h1 {
+    font-size: 30px;
+  }
+
+  .loading-logo {
+    width: 70px;
+    height: 70px;
+  }
+
+  .loading-tagline {
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ani-loading-screen *,
+  .ani-loading-screen *::before,
+  .ani-loading-screen *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

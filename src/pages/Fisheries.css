@@ -1,0 +1,511 @@
+
+/* =========================================
+   FISHERIES PAGE
+========================================= */
+
+.fisheries-page {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 92px);
+  padding: 35px 5% 50px;
+  background-image:
+    linear-gradient(
+      rgba(247, 249, 245, 0.88),
+      rgba(247, 249, 245, 0.94)
+    ),
+    url('/images/municipality-hall.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* =========================================
+   CONTROLS
+========================================= */
+
+.fisheries-controls {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 25px;
+  margin-bottom: 22px;
+}
+
+.fisheries-search {
+  width: 300px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 15px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #dfe5dc;
+  border-radius: 9px;
+  color: #6c796f;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+  transition: 0.2s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.fisheries-search:focus-within {
+  border-color: #78a55b;
+  box-shadow: 0 0 0 3px rgba(120, 165, 91, 0.12);
+}
+
+.fisheries-search > svg {
+  flex-shrink: 0;
+}
+
+.fisheries-search input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  color: #173b24;
+  font-size: 14px;
+}
+
+.fisheries-search input::placeholder {
+  color: #89938b;
+}
+
+/* =========================================
+   CATEGORIES
+========================================= */
+
+.fisheries-categories {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.fisheries-category-btn {
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid #dce3d8;
+  background: rgba(255, 255, 255, 0.96);
+  color: #58645b;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+  white-space: nowrap;
+}
+
+.fisheries-category-btn:hover {
+  border-color: #7ca55e;
+  color: #064d23;
+}
+
+.fisheries-category-btn.active {
+  background: #064d23;
+  color: white;
+  border-color: #064d23;
+}
+
+/* =========================================
+   HEADING
+========================================= */
+
+.fisheries-heading {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.fisheries-heading h1 {
+  color: #173b24;
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.fisheries-heading p {
+  color: #69746c;
+  font-size: 13px;
+}
+
+/* =========================================
+   PRODUCT GRID
+========================================= */
+
+.fisheries-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+
+/* =========================================
+   PRODUCT CARD
+========================================= */
+
+.fisheries-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid #e2e7df;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.fisheries-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
+}
+
+/* =========================================
+   PRODUCT IMAGE
+========================================= */
+
+.fisheries-image {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 155px;
+  flex: 0 0 155px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #eef4e5, #dfead5);
+}
+
+.fisheries-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fisheries-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7A987F;
+  background: #EEF4EC;
+}
+
+.fisheries-image span {
+  position: absolute;
+  bottom: 9px;
+  left: 9px;
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 20px;
+  color: #55704c;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* =========================================
+   PRODUCT INFORMATION
+========================================= */
+
+.fisheries-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.fisheries-category {
+  min-height: 15px;
+  flex-shrink: 0;
+  color: #789071;
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.fisheries-info h2 {
+  min-height: 45px;
+  margin: 0 0 8px;
+  color: #173b24;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Description gets equal space in every card */
+.fisheries-info > p {
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 0 0 8px;
+  color: #788279;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Keep spacing even when a product has no description */
+.fisheries-info > p:empty {
+  display: block;
+}
+
+/* Stock information */
+.fisheries-info > small {
+  display: block;
+  min-height: 17px;
+  margin-bottom: 10px;
+  color: #788279;
+  font-size: 11px;
+}
+
+/* =========================================
+   PRICE + CART
+========================================= */
+
+.fisheries-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  margin-top: auto;
+}
+
+.fisheries-bottom strong {
+  color: #064d23;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fisheries-cart-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  background: #064d23;
+  color: white;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.fisheries-cart-btn svg {
+  display: block;
+}
+
+.fisheries-cart-btn:hover {
+  background: #0a6b32;
+  transform: translateY(-1px);
+}
+
+.fisheries-cart-btn:disabled {
+  background: #aab5aa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================================
+   NO FISHERIES
+========================================= */
+
+.no-fisheries {
+  grid-column: 1 / -1;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #75906e;
+  text-align: center;
+}
+
+.no-fisheries h3 {
+  margin-top: 12px;
+  color: #173b24;
+  font-size: 18px;
+}
+
+.no-fisheries p {
+  margin-top: 5px;
+  color: #788279;
+  font-size: 13px;
+}
+
+/* =========================================
+   LAPTOP
+========================================= */
+
+@media (min-width: 901px) and (max-width: 1199px) {
+  .fisheries-page {
+    min-height: calc(100vh - 82px);
+    padding: 28px 4% 40px;
+  }
+
+  .fisheries-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .fisheries-image {
+    height: 140px;
+    flex-basis: 140px;
+  }
+
+  .fisheries-controls {
+    gap: 15px;
+  }
+
+  .fisheries-search {
+    width: 270px;
+  }
+
+  .fisheries-category-btn {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+  .fisheries-page {
+    min-height: calc(100vh - 80px);
+    padding: 25px 5% 40px;
+    background-attachment: scroll;
+  }
+
+  .fisheries-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fisheries-search {
+    width: 100%;
+  }
+
+  .fisheries-categories {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .fisheries-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fisheries-image {
+    height: 145px;
+    flex-basis: 145px;
+  }
+
+  .fisheries-info {
+    padding: 11px;
+  }
+
+  .fisheries-info h2 {
+    min-height: 42px;
+    font-size: 14px;
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+  .fisheries-page {
+    min-height: calc(100vh - 70px);
+    padding: 22px 4% 35px;
+    background-attachment: scroll;
+  }
+
+  .fisheries-heading h1 {
+    font-size: 25px;
+  }
+
+  .fisheries-heading p {
+    font-size: 12px;
+  }
+
+  .fisheries-categories {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .fisheries-category-btn {
+    flex-shrink: 0;
+  }
+
+  .fisheries-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .fisheries-image {
+    height: 130px;
+    flex-basis: 130px;
+  }
+
+  .fisheries-info {
+    padding: 11px;
+  }
+
+  .fisheries-info h2 {
+    min-height: 42px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .fisheries-bottom {
+    min-height: 32px;
+  }
+
+  .fisheries-bottom strong {
+    font-size: 11px;
+  }
+
+  .fisheries-cart-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* =========================================
+   VERY SMALL PHONE
+========================================= */
+
+@media (max-width: 380px) {
+  .fisheries-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fisheries-image {
+    height: 160px;
+    flex-basis: 160px;
+  }
+}

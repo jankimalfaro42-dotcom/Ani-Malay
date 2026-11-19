@@ -1,0 +1,1055 @@
+/* =====================================
+   ANI-MALAY FEEDBACK & REVIEWS
+   ===================================== */
+
+.feedback-page {
+  --feedback-green: #2d7752;
+  --feedback-dark: #203d2b;
+  --feedback-muted: #748177;
+  --feedback-border: #e2ebe3;
+  width: min(1120px, calc(100% - 40px));
+  margin: 36px auto 64px;
+  color: #293b2e;
+  font-family: inherit;
+}
+
+.feedback-page *,
+.feedback-modal-backdrop *,
+.feedback-modal-backdrop *::before,
+.feedback-modal-backdrop *::after {
+  box-sizing: border-box;
+}
+
+.feedback-page button,
+.feedback-modal-backdrop button,
+.feedback-page input,
+.feedback-page textarea,
+.feedback-page select,
+.feedback-modal-backdrop input,
+.feedback-modal-backdrop textarea,
+.feedback-modal-backdrop select {
+  font-family: inherit;
+}
+
+.feedback-page .feedback-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 38px 42px;
+  overflow: hidden;
+  color: white;
+  background: linear-gradient(120deg, #245f41, #39865c);
+  border-radius: 22px;
+  box-shadow: 0 12px 28px rgb(35 95 65 / 14%);
+}
+
+.feedback-page .feedback-hero-copy {
+  max-width: 680px;
+}
+
+.feedback-page .feedback-eyebrow,
+.feedback-page .feedback-section-kicker {
+  display: block;
+  margin-bottom: 9px;
+  color: #d7eedc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.feedback-page .feedback-hero h1 {
+  margin: 0 0 12px;
+  color: white;
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.feedback-page .feedback-hero-copy > p {
+  max-width: 600px;
+  margin: 0 0 24px;
+  color: #e3f1e6;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.feedback-page .feedback-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 13px 20px;
+  color: #245f41;
+  background: #fff;
+  border: 1px solid #fff;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.feedback-page .feedback-primary-button:hover {
+  background: #eff8f0;
+  transform: translateY(-2px);
+}
+
+.feedback-page .feedback-hero-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 130px;
+  height: 130px;
+  flex-shrink: 0;
+  color: #d7eedc;
+  background: rgb(255 255 255 / 12%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 34px;
+  transform: rotate(-5deg);
+}
+
+.feedback-page .feedback-hero-icon > svg:first-child {
+  width: 57px;
+  height: 57px;
+}
+
+.feedback-page .feedback-hero-star {
+  position: absolute;
+  top: 15px;
+  right: 13px;
+  color: #f4d477;
+}
+
+.feedback-page .feedback-rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 25px 30px;
+  margin-top: 22px;
+  background: #fff;
+  border: 1px solid var(--feedback-border);
+  border-radius: 17px;
+  box-shadow: 0 5px 20px rgb(29 70 44 / 4%);
+}
+
+.feedback-page .feedback-rating-main {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+
+.feedback-page .feedback-rating-number {
+  color: var(--feedback-dark);
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.feedback-page .feedback-stars-static {
+  color: #e7a92c;
+  font-size: 23px;
+  letter-spacing: 2px;
+}
+
+.feedback-page .feedback-rating-main p {
+  margin: 5px 0 0;
+  color: var(--feedback-muted);
+  font-size: 12px;
+}
+
+.feedback-page .feedback-summary-divider {
+  width: 1px;
+  height: 50px;
+  background: #e4ebe5;
+}
+
+.feedback-page .feedback-summary-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--feedback-green);
+}
+
+.feedback-page .feedback-summary-stat strong {
+  color: var(--feedback-dark);
+  font-size: 25px;
+}
+
+.feedback-page .feedback-summary-stat span {
+  max-width: 150px;
+  color: var(--feedback-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.feedback-page .feedback-reviews-section {
+  margin-top: 42px;
+}
+
+.feedback-page .feedback-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.feedback-page .feedback-section-kicker {
+  margin-bottom: 7px;
+  color: var(--feedback-green);
+}
+
+.feedback-page .feedback-section-heading h2 {
+  margin: 0 0 7px;
+  color: var(--feedback-dark);
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.feedback-page .feedback-section-heading p {
+  margin: 0;
+  color: var(--feedback-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.feedback-page .feedback-filter {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #56675b;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.feedback-page .feedback-filter select {
+  min-height: 42px;
+  padding: 9px 30px 9px 12px;
+  color: #354a3a;
+  background: #fff;
+  border: 1px solid #dce6de;
+  border-radius: 9px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.feedback-page .feedback-demo-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 15px;
+  margin-bottom: 16px;
+  color: #705b26;
+  background: #fff9e9;
+  border: 1px solid #f0e2b7;
+  border-radius: 10px;
+}
+
+.feedback-page .feedback-demo-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.feedback-page .feedback-demo-banner p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.feedback-page .feedback-review-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.feedback-page .feedback-review-card {
+  min-width: 0;
+  padding: 23px;
+  background: #fff;
+  border: 1px solid var(--feedback-border);
+  border-radius: 16px;
+  box-shadow: 0 5px 20px rgb(29 70 44 / 4%);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.feedback-page .feedback-review-card:hover {
+  box-shadow: 0 9px 25px rgb(29 70 44 / 8%);
+  transform: translateY(-2px);
+}
+
+.feedback-page .feedback-review-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feedback-page .feedback-review-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--feedback-green);
+  background: #eaf4ed;
+  border-radius: 50%;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.feedback-page .feedback-review-author {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.feedback-page .feedback-review-author strong {
+  color: #2c4032;
+  font-size: 14px;
+}
+
+.feedback-page .feedback-review-author span {
+  color: #8a968c;
+  font-size: 11px;
+}
+
+.feedback-page .feedback-demo-label {
+  padding: 5px 8px;
+  color: #7d692d;
+  background: #fff7e1;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.feedback-page .feedback-review-product {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 0 11px;
+  margin-top: 13px;
+  border-top: 1px solid #edf1ed;
+}
+
+.feedback-page .feedback-review-product > span:first-child {
+  color: var(--feedback-green);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.feedback-page .feedback-review-stars {
+  flex-shrink: 0;
+  color: #e7a92c;
+  font-size: 17px;
+  letter-spacing: 1px;
+}
+
+.feedback-page .feedback-review-comment {
+  margin: 0;
+  color: #627166;
+  font-size: 14px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.feedback-page .feedback-review-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.feedback-page .feedback-review-images img {
+  width: 100px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 9px;
+}
+
+.feedback-page .feedback-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 45px 18px;
+  color: #8a968c;
+  background: #fff;
+  border: 1px dashed #dce6de;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.feedback-page .feedback-empty h3 {
+  margin: 12px 0 5px;
+  color: #354a3a;
+  font-size: 17px;
+}
+
+.feedback-page .feedback-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.feedback-page .feedback-private-note {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 23px 25px;
+  margin-top: 34px;
+  background: #f1f7f2;
+  border: 1px solid #dceadd;
+  border-radius: 16px;
+}
+
+.feedback-page .feedback-private-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  color: var(--feedback-green);
+  background: #fff;
+  border-radius: 13px;
+}
+
+.feedback-page .feedback-private-note > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.feedback-page .feedback-private-note h3 {
+  margin: 0 0 5px;
+  color: #2d4634;
+  font-size: 15px;
+}
+
+.feedback-page .feedback-private-note p {
+  margin: 0;
+  color: #718075;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.feedback-page .feedback-messages-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 41px;
+  padding: 10px 14px;
+  flex-shrink: 0;
+  color: #fff;
+  background: var(--feedback-green);
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.feedback-page .feedback-messages-link:hover {
+  background: #245f41;
+}
+
+/* =====================================
+   SUBMIT REVIEW MODAL
+   ===================================== */
+
+.feedback-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  overflow-y: auto;
+  background: rgb(20 35 25 / 58%);
+  backdrop-filter: blur(4px);
+}
+
+.feedback-modal-backdrop .feedback-modal {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 44px);
+  padding: 29px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e3ebe4;
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgb(0 0 0 / 22%);
+}
+
+.feedback-modal .feedback-modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  padding-bottom: 21px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #edf1ed;
+}
+
+.feedback-modal .feedback-modal-heading h2 {
+  margin: 0 0 7px;
+  color: #203d2b;
+  font-size: 25px;
+  font-weight: 800;
+}
+
+.feedback-modal .feedback-modal-heading p {
+  margin: 0;
+  color: #748177;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.feedback-modal .feedback-close-button {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  flex-shrink: 0;
+  color: #56675b;
+  background: #f2f6f2;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.feedback-modal .feedback-close-button:hover {
+  color: #203d2b;
+  background: #e5eee6;
+}
+
+.feedback-modal .feedback-form-field {
+  margin-bottom: 21px;
+}
+
+.feedback-modal .feedback-form-field > label:first-child {
+  display: block;
+  margin-bottom: 9px;
+  color: #354a3a;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.feedback-modal .feedback-form-field select,
+.feedback-modal .feedback-form-field textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 13px 14px;
+  color: #293c30;
+  background: #fff;
+  border: 1px solid #d9e4db;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.6;
+  box-shadow: none;
+}
+
+.feedback-modal .feedback-form-field select {
+  min-height: 48px;
+}
+
+.feedback-modal .feedback-form-field textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.feedback-modal .feedback-form-field select:focus,
+.feedback-modal .feedback-form-field textarea:focus {
+  border-color: #2d7752;
+  box-shadow: 0 0 0 3px rgb(45 119 82 / 10%);
+}
+
+.feedback-modal .feedback-star-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.feedback-modal .feedback-star-picker button {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  padding: 3px;
+  color: #cbd5cc;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.feedback-modal .feedback-star-picker button.active {
+  color: #e7a92c;
+}
+
+.feedback-modal .feedback-star-picker button:hover {
+  background: #fff8e8;
+}
+
+.feedback-modal .feedback-star-picker > span {
+  margin-left: 8px;
+  color: #748177;
+  font-size: 12px;
+}
+
+.feedback-modal .feedback-form-counter {
+  display: block;
+  margin-top: 6px;
+  color: #89958b;
+  font-size: 11px;
+  text-align: right;
+}
+
+.feedback-modal .feedback-upload-help {
+  margin: -3px 0 11px;
+  color: #748177;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.feedback-modal .feedback-upload-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 140px;
+  padding: 20px;
+  color: #2d7752;
+  background: #f7fbf7;
+  border: 2px dashed #b4d0bb;
+  border-radius: 13px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.feedback-modal .feedback-upload-box:hover {
+  background: #eef7ef;
+  border-color: #2d7752;
+}
+
+.feedback-modal .feedback-upload-box strong {
+  font-size: 13px;
+}
+
+.feedback-modal .feedback-upload-box span {
+  color: #748177;
+  font-size: 11px;
+}
+
+.feedback-modal .feedback-upload-box input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.feedback-modal .feedback-upload-previews {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 13px;
+}
+
+.feedback-modal .feedback-upload-preview {
+  position: relative;
+  min-width: 0;
+}
+
+.feedback-modal .feedback-upload-preview img {
+  display: block;
+  width: 100%;
+  height: 95px;
+  object-fit: cover;
+  border-radius: 9px;
+}
+
+.feedback-modal .feedback-upload-preview button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: white;
+  background: rgb(30 45 34 / 85%);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.feedback-modal .feedback-upload-preview small {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #748177;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feedback-modal .feedback-form-notice {
+  padding: 12px 14px;
+  margin-bottom: 15px;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.feedback-modal .feedback-form-notice.success {
+  color: #285e40;
+  background: #edf7ef;
+  border: 1px solid #d2e9d7;
+}
+
+.feedback-modal .feedback-form-notice.error {
+  color: #9a332d;
+  background: #fff0ef;
+  border: 1px solid #f2cfcc;
+}
+
+.feedback-modal .feedback-approval-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 17px;
+  color: #718075;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.feedback-modal .feedback-approval-note svg {
+  flex-shrink: 0;
+  color: #2d7752;
+}
+
+.feedback-modal .feedback-submit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 49px;
+  padding: 13px 18px;
+  color: #fff;
+  background: #2d7752;
+  border: 0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.feedback-modal .feedback-submit-button:hover {
+  background: #245f41;
+}
+
+/* =====================================
+   RESPONSIVE LAYOUT
+   ===================================== */
+
+@media (max-width: 760px) {
+  .feedback-page .feedback-hero {
+    padding: 29px;
+  }
+
+  .feedback-page .feedback-hero-icon {
+    width: 95px;
+    height: 95px;
+    border-radius: 25px;
+  }
+
+  .feedback-page .feedback-rating-summary {
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 22px;
+  }
+
+  .feedback-page .feedback-summary-divider {
+    display: none;
+  }
+
+  .feedback-page .feedback-review-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .feedback-page {
+    width: calc(100% - 24px);
+    margin-top: 22px;
+  }
+
+  .feedback-page .feedback-hero {
+    padding: 24px 20px;
+    border-radius: 17px;
+  }
+
+  .feedback-page .feedback-hero h1 {
+    font-size: 29px;
+  }
+
+  .feedback-page .feedback-hero-copy > p {
+    font-size: 13px;
+  }
+
+  .feedback-page .feedback-hero-icon {
+    display: none;
+  }
+
+  .feedback-page .feedback-rating-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .feedback-page .feedback-rating-number {
+    font-size: 36px;
+  }
+
+  .feedback-page .feedback-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .feedback-page .feedback-review-card {
+    padding: 18px;
+  }
+
+  .feedback-page .feedback-private-note {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 19px;
+  }
+
+  .feedback-page .feedback-messages-link {
+    width: 100%;
+  }
+
+  .feedback-modal-backdrop {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .feedback-modal-backdrop .feedback-modal {
+    max-height: calc(100vh - 24px);
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .feedback-modal .feedback-modal-heading h2 {
+    font-size: 22px;
+  }
+}
+
+/* =====================================
+   PROFILE PICTURE OVERLAP FIX
+   ===================================== */
+
+.feedback-page .feedback-review-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.feedback-page .feedback-review-avatar img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+
+.feedback-page .feedback-review-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.feedback-page .feedback-review-top {
+  min-width: 0;
+  align-items: center;
+}
+
+.feedback-page .feedback-review-author {
+  overflow-wrap: anywhere;
+}
+
+/* =====================================
+   CATEGORY FILTER TABS
+   ===================================== */
+
+.feedback-page .feedback-category-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 20px;
+}
+
+.feedback-page .feedback-category-tabs button {
+  min-height: 40px;
+  padding: 10px 17px;
+  color: #526458;
+  background: #fff;
+  border: 1px solid #dce6de;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedback-page .feedback-category-tabs button:hover {
+  color: #245f41;
+  background: #f0f7f1;
+  border-color: #a9cbb2;
+}
+
+.feedback-page .feedback-category-tabs button.active {
+  color: #fff;
+  background: #2d7752;
+  border-color: #2d7752;
+}
+
+/* =====================================
+   MY REVIEWS
+   ===================================== */
+
+.feedback-page .feedback-my-review-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.feedback-page .feedback-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: capitalize;
+}
+
+.feedback-page .feedback-status-badge.pending {
+  color: #80621d;
+  background: #fff5d9;
+}
+
+.feedback-page .feedback-status-badge.approved {
+  color: #24643c;
+  background: #e8f5eb;
+}
+
+.feedback-page .feedback-status-badge.rejected {
+  color: #9a332d;
+  background: #ffeded;
+}
+
+/* =====================================
+   DELETE REVIEW BUTTON
+   ===================================== */
+
+.feedback-page .feedback-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 12px;
+  color: #a43d36;
+  background: #fff;
+  border: 1px solid #efd2d0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedback-page .feedback-delete-button:hover {
+  color: #fff;
+  background: #b9433b;
+  border-color: #b9433b;
+}
+
+.feedback-page .feedback-delete-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =====================================
+   PAGE NOTICE
+   ===================================== */
+
+.feedback-page .feedback-page-notice {
+  padding: 13px 16px;
+  margin: 16px 0;
+  color: #285e40;
+  background: #edf7ef;
+  border: 1px solid #d2e9d7;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.feedback-page .feedback-page-notice.error {
+  color: #9a332d;
+  background: #fff0ef;
+  border-color: #f2cfcc;
+}
+
+/* =====================================
+   RESPONSIVE CATEGORY TABS
+   ===================================== */
+
+@media (max-width: 520px) {
+  .feedback-page .feedback-category-tabs {
+    gap: 7px;
+  }
+
+  .feedback-page .feedback-category-tabs button {
+    flex: 1 1 auto;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  .feedback-page .feedback-my-review-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .feedback-page .feedback-delete-button {
+    width: 100%;
+  }
+}

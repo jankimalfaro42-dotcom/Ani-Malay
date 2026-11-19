@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ani-Malay</string>
+    <string name="title_activity_main">Ani-Malay</string>
+    <string name="package_name">com.darksystem.animalay</string>
+    <string name="custom_url_scheme">com.darksystem.animalay</string>
+</resources>
