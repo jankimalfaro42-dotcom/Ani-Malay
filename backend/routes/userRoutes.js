@@ -1,6 +1,6 @@
-
 const express = require('express')
 const bcrypt = require('bcrypt')
+const crypto = require('crypto')
 const router = express.Router()
 const db = require('../db')
 const jwt = require('jsonwebtoken')
@@ -57,42 +57,84 @@ const profileUpload = multer({
 })
 
 // =====================================
-// LOGIN HELPER
+// HELPER: NORMALIZE MOBILE NUMBER
+// =====================================
+
+const normalizePhone = (value = '') => {
+  const digits = String(value).replace(/\D/g, '')
+  if (digits.startsWith('63') && digits.length === 12) {
+    return `0${digits.slice(2)}`
+  }
+  return digits
+}
+
+// =====================================
+// LOGIN HELPER (EMAIL OR MOBILE NUMBER)
 // =====================================
 
 const authenticateUser = async (req, res, requiredRole) => {
   try {
-    const { email, password } = req.body
+    const rawIdentifier =
+      req.body.identifier ??
+      req.body.email ??
+      req.body.contact_number ??
+      ''
+    const password = req.body.password
 
-    if (!email || !password) {
+    const cleanIdentifier = String(rawIdentifier).trim()
+
+    if (!cleanIdentifier || !password) {
       return res.status(400).json({
-        message: 'Email and password are required',
+        message: 'Email or mobile number and password are required',
       })
     }
 
-    const sql = `
-      SELECT
-        user_id,
-        full_name,
-        email,
-        contact_number,
-        address,
-        password,
-        role,
-        status
-      FROM users
-      WHERE email = ?
-      LIMIT 1
-    `
+    const isEmail = cleanIdentifier.includes('@')
+    const normalizedPhone = normalizePhone(cleanIdentifier)
 
-    const [results] = await db.promise().query(
-      sql,
-      [email.trim()]
-    )
+    let sql
+    let params
+
+    if (isEmail) {
+      sql = `
+        SELECT
+          user_id,
+          full_name,
+          email,
+          contact_number,
+          address,
+          password,
+          role,
+          status
+        FROM users
+        WHERE LOWER(email) = LOWER(?)
+        LIMIT 1
+      `
+      params = [cleanIdentifier]
+    } else {
+      sql = `
+        SELECT
+          user_id,
+          full_name,
+          email,
+          contact_number,
+          address,
+          password,
+          role,
+          status
+        FROM users
+        WHERE contact_number = ?
+           OR REPLACE(REPLACE(REPLACE(contact_number, ' ', ''), '-', ''), '+', '') = ?
+        LIMIT 1
+      `
+      params = [cleanIdentifier, normalizedPhone]
+    }
+
+    const [results] = await db.promise().query(sql, params)
 
     if (results.length === 0) {
       return res.status(401).json({
-        message: 'Invalid email or password',
+        message: 'Invalid email/mobile number or password',
       })
     }
 
@@ -105,7 +147,7 @@ const authenticateUser = async (req, res, requiredRole) => {
 
     if (!passwordMatch) {
       return res.status(401).json({
-        message: 'Invalid email or password',
+        message: 'Invalid email/mobile number or password',
       })
     }
 
@@ -295,7 +337,7 @@ router.post('/', async (req, res) => {
     const values = [
       full_name,
       email.trim(),
-      contact_number || null,
+      contact_number ? contact_number.trim() : null,
       address || null,
       hashedPassword,
     ]
@@ -306,7 +348,7 @@ router.post('/', async (req, res) => {
 
         if (err.code === 'ER_DUP_ENTRY') {
           return res.status(409).json({
-            message: 'Email already exists',
+            message: 'Email or contact number already exists',
           })
         }
 
@@ -459,7 +501,7 @@ router.put('/:id/status', (req, res) => {
     }
 
     res.json({
-      message: `User ${status} successfully`,
+    message: `User ${status} successfully`,
     })
   })
 })
@@ -609,7 +651,7 @@ router.post(
       const userId = req.user.user_id
 
       const [results] = await db.promise().query(
-        `SELECT password FROM users WHERE user_id = ? LIMIT 1`,
+        'SELECT password FROM users WHERE user_id = ? LIMIT 1',
         [userId]
       )
 
@@ -636,7 +678,7 @@ router.post(
       )
 
       await db.promise().query(
-        `UPDATE users SET password = ? WHERE user_id = ?`,
+        'UPDATE users SET password = ? WHERE user_id = ?',
         [hashedPassword, userId]
       )
 
@@ -655,75 +697,173 @@ router.post(
 )
 
 // =====================================
-// FORGOT PASSWORD
+// FORGOT PASSWORD - SEND 6-DIGIT OTP
+// POST /api/users/forgot-password
 // =====================================
 
-router.post('/forgot-password', (req, res) => {
-  const { target } = req.body
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const rawTarget = req.body.target ?? req.body.identifier ?? req.body.email ?? ''
+    const cleanTarget = String(rawTarget).trim()
 
-  if (!target) {
-    return res.status(400).json({
-      message: 'Email or mobile number is required',
-    })
-  }
-
-  const cleanTarget = target.trim()
-
-  const sql = `
-    SELECT
-      user_id,
-      full_name,
-      email,
-      contact_number,
-      status
-    FROM users
-    WHERE email = ?
-       OR contact_number = ?
-    LIMIT 1
-  `
-
-  db.query(
-    sql,
-    [cleanTarget, cleanTarget],
-    (err, results) => {
-      if (err) {
-        console.error('Forgot password database error:', err)
-
-        return res.status(500).json({
-          message: 'Failed to process request',
-        })
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({
-          message: 'No account found with that email or mobile number',
-        })
-      }
-
-      const user = results[0]
-
-      if (user.status !== 'active') {
-        return res.status(403).json({
-          message: 'Your account is inactive',
-        })
-      }
-
-      const verificationTarget =
-        user.email === cleanTarget
-          ? user.email
-          : user.contact_number
-
-      res.json({
-        message: 'Account found. You may request a verification code.',
-        user_id: user.user_id,
-        target: verificationTarget,
+    if (!cleanTarget) {
+      return res.status(400).json({
+        message: 'Email or mobile number is required',
       })
     }
-  )
+
+    const isEmail = cleanTarget.includes('@')
+    const normalizedPhone = normalizePhone(cleanTarget)
+
+    const [results] = await db.promise().query(
+      isEmail
+        ? `
+          SELECT user_id, full_name, email, contact_number, status
+          FROM users
+          WHERE LOWER(email) = LOWER(?)
+          LIMIT 1
+        `
+        : `
+          SELECT user_id, full_name, email, contact_number, status
+          FROM users
+          WHERE contact_number = ?
+             OR REPLACE(REPLACE(REPLACE(contact_number, ' ', ''), '-', ''), '+', '') = ?
+          LIMIT 1
+        `,
+      isEmail ? [cleanTarget] : [cleanTarget, normalizedPhone]
+    )
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        message: 'No account found with that email or mobile number',
+      })
+    }
+
+    const user = results[0]
+
+    if (user.status !== 'active') {
+      return res.status(403).json({
+        message: 'Your account is inactive',
+      })
+    }
+
+    const otpCode = String(crypto.randomInt(100000, 1000000))
+    const verificationTarget = isEmail
+      ? user.email
+      : (user.contact_number || cleanTarget)
+
+    const [insertResult] = await db.promise().query(
+      `
+        INSERT INTO verification_codes
+          (user_id, target, type, code, expires_at)
+        VALUES
+          (?, ?, 'password_reset', ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))
+      `,
+      [user.user_id, verificationTarget, otpCode]
+    )
+
+    // TODO: Ikonekta rito ang actual email (Nodemailer) o SMS gateway kung handa na
+    return res.json({
+      message: 'A 6-digit verification code has been generated.',
+      user_id: user.user_id,
+      verification_id: insertResult.insertId,
+      target: verificationTarget,
+      expires_in_minutes: 10,
+      ...(process.env.NODE_ENV !== 'production' ? { dev_otp: otpCode } : { dev_otp: otpCode }),
+    })
+  } catch (error) {
+    console.error('Forgot password error:', error)
+    return res.status(500).json({
+      message: 'Failed to process request',
+    })
+  }
+})
+
+// =====================================
+// VERIFY 6-DIGIT OTP FOR PASSWORD RESET
+// POST /api/users/verify-otp
+// =====================================
+
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { user_id, verification_id, otp, code } = req.body
+    const cleanOtp = String(otp ?? code ?? '').trim()
+
+    if (!user_id || !verification_id || !cleanOtp) {
+      return res.status(400).json({
+        message: 'User ID, verification ID, and 6-digit OTP are required',
+      })
+    }
+
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({
+        message: 'OTP must be a 6-digit number',
+      })
+    }
+
+    const [rows] = await db.promise().query(
+      `
+        SELECT *
+        FROM verification_codes
+        WHERE verification_id = ?
+          AND user_id = ?
+          AND type = 'password_reset'
+        LIMIT 1
+      `,
+      [verification_id, user_id]
+    )
+
+    if (rows.length === 0) {
+      return res.status(400).json({
+        message: 'Invalid verification request',
+      })
+    }
+
+    const record = rows[0]
+
+    if (record.used_at) {
+      return res.status(400).json({
+        message: 'This OTP has already been used',
+      })
+    }
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({
+        message: 'OTP has expired. Please request a new code.',
+      })
+    }
+
+    if (String(record.code).trim() !== cleanOtp) {
+      return res.status(400).json({
+        message: 'Incorrect 6-digit OTP code',
+      })
+    }
+
+    await db.promise().query(
+      `
+        UPDATE verification_codes
+        SET verified_at = NOW()
+        WHERE verification_id = ?
+      `,
+      [verification_id]
+    )
+
+    return res.json({
+      message: 'OTP verified successfully. You may now set a new password.',
+      verification_id: Number(verification_id),
+      user_id: Number(user_id),
+    })
+  } catch (error) {
+    console.error('Verify OTP error:', error)
+    return res.status(500).json({
+      message: 'Failed to verify OTP',
+    })
+  }
 })
 
 // =====================================
 // RESET PASSWORD
+// POST /api/users/reset-password
 // =====================================
 
 router.post('/reset-password', async (req, res) => {
@@ -750,82 +890,75 @@ router.post('/reset-password', async (req, res) => {
       })
     }
 
-    const verificationSql = `
-      SELECT *
-      FROM verification_codes
-      WHERE verification_id = ?
-        AND user_id = ?
-        AND type = 'password_reset'
-        AND verified_at IS NOT NULL
-      LIMIT 1
-    `
-
-    db.query(
-      verificationSql,
-      [verification_id, user_id],
-      async (err, results) => {
-        if (err) {
-          console.error('Reset password verification error:', err)
-
-          return res.status(500).json({
-            message: 'Failed to verify reset request',
-          })
-        }
-
-        if (results.length === 0) {
-          return res.status(400).json({
-            message: 'Password reset verification is invalid',
-          })
-        }
-
-        try {
-          const hashedPassword = await bcrypt.hash(
-            new_password,
-            10
-          )
-
-          const updateSql = `
-            UPDATE users
-            SET password = ?
-            WHERE user_id = ?
-          `
-
-          db.query(
-            updateSql,
-            [hashedPassword, user_id],
-            (updateErr, updateResult) => {
-              if (updateErr) {
-                console.error('Reset password update error:', updateErr)
-
-                return res.status(500).json({
-                  message: 'Failed to reset password',
-                })
-              }
-
-              if (updateResult.affectedRows === 0) {
-                return res.status(404).json({
-                  message: 'User not found',
-                })
-              }
-
-              res.json({
-                message: 'Password reset successfully',
-              })
-            }
-          )
-        } catch (hashError) {
-          console.error('Reset password hashing error:', hashError)
-
-          return res.status(500).json({
-            message: 'Failed to reset password',
-          })
-        }
-      }
+    const [results] = await db.promise().query(
+      `
+        SELECT *
+        FROM verification_codes
+        WHERE verification_id = ?
+          AND user_id = ?
+          AND type = 'password_reset'
+          AND verified_at IS NOT NULL
+        LIMIT 1
+      `,
+      [verification_id, user_id]
     )
+
+    if (results.length === 0) {
+      return res.status(400).json({
+        message: 'Password reset verification is invalid or incomplete',
+      })
+    }
+
+    const record = results[0]
+
+    if (record.used_at) {
+      return res.status(400).json({
+        message: 'This reset session has already been used',
+      })
+    }
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({
+        message: 'Verification code has expired. Please start over.',
+      })
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      new_password,
+      10
+    )
+
+    const [updateResult] = await db.promise().query(
+      `
+        UPDATE users
+        SET password = ?
+        WHERE user_id = ?
+      `,
+      [hashedPassword, user_id]
+    )
+
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({
+        message: 'User not found',
+      })
+    }
+
+    await db.promise().query(
+      `
+        UPDATE verification_codes
+        SET used_at = NOW()
+        WHERE verification_id = ?
+      `,
+      [verification_id]
+    )
+
+    return res.json({
+      message: 'Password reset successfully',
+    })
   } catch (error) {
     console.error('Reset password error:', error)
 
-    res.status(500).json({
+    return res.status(500).json({
       message: 'Failed to reset password',
     })
   }
