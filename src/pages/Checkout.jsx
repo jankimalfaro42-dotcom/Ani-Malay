@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { notify } from '../utils/notify'
@@ -16,6 +15,23 @@ const DELIVERY_AREAS = {
   lezo: { label: 'Lezo', fee: 200 },
   new_washington: { label: 'New Washington', fee: 200 },
   kalibo: { label: 'Kalibo', fee: 200 },
+}
+
+async function parseApiResponse(response, fallbackErrorMessage) {
+  const rawText = await response.text()
+
+  try {
+    return rawText ? JSON.parse(rawText) : {}
+  } catch {
+    console.error(
+      `Non-JSON response from ${response.url} (status ${response.status}):`,
+      rawText.slice(0, 300)
+    )
+
+    throw new Error(
+      `${fallbackErrorMessage} (Server returned HTML instead of JSON — status ${response.status}).`
+    )
+  }
 }
 
 function Checkout() {
@@ -84,7 +100,10 @@ function Checkout() {
           }
         )
 
-        const data = await response.json()
+        const data = await parseApiResponse(
+          response,
+          'Failed to load cart.'
+        )
 
         if (!response.ok) {
           throw new Error(data.message || 'Failed to load cart.')
@@ -311,7 +330,10 @@ function Checkout() {
           }
         )
 
-        const orderData = await orderResponse.json()
+        const orderData = await parseApiResponse(
+          orderResponse,
+          'Failed to place your order.'
+        )
 
         if (!orderResponse.ok) {
           throw new Error(
@@ -365,7 +387,10 @@ function Checkout() {
           }
         )
 
-        const receiptData = await receiptResponse.json()
+        const receiptData = await parseApiResponse(
+          receiptResponse,
+          'Order created, but shipping receipt submission failed.'
+        )
 
         if (!receiptResponse.ok) {
           throw new Error(
@@ -870,3 +895,4 @@ function Checkout() {
 }
 
 export default Checkout
+

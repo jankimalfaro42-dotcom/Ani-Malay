@@ -754,13 +754,13 @@ function Products() {
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 1200,
+            zIndex: 1300,
             background: 'rgba(15, 29, 20, 0.58)',
             backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '16px',
+            padding: '16px 16px 84px',
           }}
         >
           <div
@@ -768,12 +768,13 @@ function Products() {
             style={{
               width: '100%',
               maxWidth: '520px',
-              maxHeight: '90vh',
+              maxHeight: 'calc(100vh - 104px)',
               overflowY: 'auto',
               background: '#ffffff',
               borderRadius: '22px',
               boxShadow: '0 24px 60px rgba(10, 30, 16, 0.28)',
               position: 'relative',
+              zIndex: 1301,
               animation: 'fadeIn 0.18s ease-out',
             }}
           >
@@ -811,7 +812,7 @@ function Products() {
               style={{
                 position: 'relative',
                 width: '100%',
-                height: '290px',
+                height: '240px',
                 background: '#f2f6f2',
                 overflow: 'hidden',
                 borderTopLeftRadius: '22px',
@@ -1017,12 +1018,12 @@ function Products() {
             )}
 
             {/* FLOATING CARD BODY */}
-            <div style={{ padding: '20px 22px 24px' }}>
+            <div style={{ padding: '18px 20px 28px' }}>
               <h2
                 id="floating-product-title"
                 style={{
                   margin: '0 0 8px',
-                  fontSize: '1.35rem',
+                  fontSize: '1.3rem',
                   color: '#182b1f',
                 }}
               >
@@ -1047,16 +1048,16 @@ function Products() {
                 <span>
                   {modalStock > 0
                     ? `${modalStock} ${activeProduct.unit || 'units'} in stock`
-                    : 'Out of stock'}
+                    : 'Out of stock'}`
                 </span>
               </div>
 
               {activeProduct.description && (
                 <p
                   style={{
-                    margin: '0 0 16px',
+                    margin: '0 0 14px',
                     fontSize: '14px',
-                    lineHeight: 1.55,
+                    lineHeight: 1.5,
                     color: '#485a4e',
                   }}
                 >
@@ -1091,7 +1092,7 @@ function Products() {
                     }
                     style={{
                       width: '100%',
-                      padding: '11px 12px',
+                      padding: '10px 12px',
                       border: '1px solid #cdd8d0',
                       borderRadius: '10px',
                       background: '#fff',
@@ -1117,6 +1118,7 @@ function Products() {
               <div
                 style={{
                   display: 'flex',
+                  flexWrap: 'wrap',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '12px',
@@ -1124,11 +1126,11 @@ function Products() {
                   borderTop: '1px solid #e7ede8',
                 }}
               >
-                <div>
+                <div style={{ minWidth: '120px' }}>
                   <strong
                     style={{
                       display: 'block',
-                      fontSize: '1.3rem',
+                      fontSize: '1.25rem',
                       color: '#1b5e20',
                     }}
                   >
@@ -1157,8 +1159,9 @@ function Products() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '8px',
-                    padding: '12px 20px',
+                    padding: '11px 18px',
                     borderRadius: '12px',
                     border: 'none',
                     background:
@@ -1168,6 +1171,8 @@ function Products() {
                     color: '#ffffff',
                     fontWeight: 600,
                     fontSize: '14px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                     cursor:
                       !modalSelectedOption || modalAvailablePacks <= 0
                         ? 'not-allowed'
