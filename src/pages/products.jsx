@@ -760,19 +760,19 @@ function Products() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '16px 16px 84px',
+            padding: '16px 16px 76px',
           }}
         >
           <div
             onClick={(event) => event.stopPropagation()}
             style={{
               width: '100%',
-              maxWidth: '520px',
-              maxHeight: 'calc(100vh - 104px)',
+              maxWidth: '370px',
+              maxHeight: '76vh',
               overflowY: 'auto',
               background: '#ffffff',
-              borderRadius: '22px',
-              boxShadow: '0 24px 60px rgba(10, 30, 16, 0.28)',
+              borderRadius: '18px',
+              boxShadow: '0 20px 48px rgba(10, 30, 16, 0.28)',
               position: 'relative',
               zIndex: 1301,
               animation: 'fadeIn 0.18s ease-out',
@@ -785,23 +785,23 @@ function Products() {
               aria-label="Close product details"
               style={{
                 position: 'absolute',
-                top: '14px',
-                right: '14px',
+                top: '10px',
+                right: '10px',
                 zIndex: 10,
-                width: '36px',
-                height: '36px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 border: 'none',
                 background: 'rgba(255, 255, 255, 0.92)',
                 color: '#1f3326',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.14)',
+                boxShadow: '0 3px 10px rgba(0,0,0,0.14)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
               }}
             >
-              <X size={20} />
+              <X size={16} />
             </button>
 
             {/* SWIPEABLE IMAGE CAROUSEL */}
@@ -812,11 +812,11 @@ function Products() {
               style={{
                 position: 'relative',
                 width: '100%',
-                height: '240px',
+                height: '175px',
                 background: '#f2f6f2',
                 overflow: 'hidden',
-                borderTopLeftRadius: '22px',
-                borderTopRightRadius: '22px',
+                borderTopLeftRadius: '18px',
+                borderTopRightRadius: '18px',
                 userSelect: 'none',
               }}
             >
@@ -846,7 +846,7 @@ function Products() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: '#647568',
-                    fontSize: '14px',
+                    fontSize: '13px',
                   }}
                 >
                   Image unavailable
@@ -857,13 +857,13 @@ function Products() {
                 <span
                   style={{
                     position: 'absolute',
-                    top: '14px',
-                    left: '14px',
+                    top: '10px',
+                    left: '10px',
                     background: '#1b5e20',
                     color: '#fff',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontWeight: 600,
-                    padding: '5px 12px',
+                    padding: '4px 10px',
                     borderRadius: '999px',
                   }}
                 >
@@ -885,11 +885,11 @@ function Products() {
                     }
                     style={{
                       position: 'absolute',
-                      left: '12px',
+                      left: '8px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      width: '34px',
-                      height: '34px',
+                      width: '28px',
+                      height: '28px',
                       borderRadius: '50%',
                       border: 'none',
                       background: 'rgba(255,255,255,0.88)',
@@ -898,10 +898,10 @@ function Products() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                     }}
                   >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={16} />
                   </button>
 
                   <button
@@ -914,11 +914,11 @@ function Products() {
                     }
                     style={{
                       position: 'absolute',
-                      right: '12px',
+                      right: '8px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      width: '34px',
-                      height: '34px',
+                      width: '28px',
+                      height: '28px',
                       borderRadius: '50%',
                       border: 'none',
                       background: 'rgba(255,255,255,0.88)',
@@ -927,23 +927,23 @@ function Products() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                     }}
                   >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={16} />
                   </button>
 
                   {/* PAGINATION DOTS */}
                   <div
                     style={{
                       position: 'absolute',
-                      bottom: '12px',
+                      bottom: '8px',
                       left: '50%',
                       transform: 'translateX(-50%)',
                       display: 'flex',
-                      gap: '6px',
+                      gap: '5px',
                       background: 'rgba(18, 36, 24, 0.45)',
-                      padding: '5px 10px',
+                      padding: '4px 8px',
                       borderRadius: '999px',
                     }}
                   >
@@ -954,8 +954,8 @@ function Products() {
                         aria-label={`View image ${idx + 1}`}
                         onClick={() => setActiveImageIndex(idx)}
                         style={{
-                          width: activeImageIndex === idx ? '18px' : '7px',
-                          height: '7px',
+                          width: activeImageIndex === idx ? '14px' : '6px',
+                          height: '6px',
                           borderRadius: '999px',
                           border: 'none',
                           padding: 0,
@@ -978,8 +978,8 @@ function Products() {
               <div
                 style={{
                   display: 'flex',
-                  gap: '8px',
-                  padding: '12px 20px 0',
+                  gap: '6px',
+                  padding: '8px 14px 0',
                   overflowX: 'auto',
                 }}
               >
@@ -989,9 +989,9 @@ function Products() {
                     type="button"
                     onClick={() => setActiveImageIndex(idx)}
                     style={{
-                      width: '54px',
-                      height: '54px',
-                      borderRadius: '10px',
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '8px',
                       overflow: 'hidden',
                       padding: 0,
                       border:
@@ -1018,12 +1018,12 @@ function Products() {
             )}
 
             {/* FLOATING CARD BODY */}
-            <div style={{ padding: '18px 20px 28px' }}>
+            <div style={{ padding: '13px 15px 16px' }}>
               <h2
                 id="floating-product-title"
                 style={{
-                  margin: '0 0 8px',
-                  fontSize: '1.3rem',
+                  margin: '0 0 6px',
+                  fontSize: '1.12rem',
                   color: '#182b1f',
                 }}
               >
@@ -1034,30 +1034,30 @@ function Products() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '13px',
+                  gap: '5px',
+                  fontSize: '11.5px',
                   fontWeight: 600,
                   color: modalStock > 0 ? '#1b5e20' : '#b91c1c',
                   background: modalStock > 0 ? '#eaf5ec' : '#fee2e2',
-                  padding: '4px 10px',
-                  borderRadius: '8px',
-                  marginBottom: '12px',
+                  padding: '3px 8px',
+                  borderRadius: '7px',
+                  marginBottom: '8px',
                 }}
               >
-                <PackageCheck size={15} />
+                <PackageCheck size={13} />
                 <span>
                   {modalStock > 0
                     ? `${modalStock} ${activeProduct.unit || 'units'} in stock`
-                    : 'Out of stock'}`
+                    : 'Out of stock'}
                 </span>
               </div>
 
               {activeProduct.description && (
                 <p
                   style={{
-                    margin: '0 0 14px',
-                    fontSize: '14px',
-                    lineHeight: 1.5,
+                    margin: '0 0 10px',
+                    fontSize: '12.5px',
+                    lineHeight: 1.4,
                     color: '#485a4e',
                   }}
                 >
@@ -1066,15 +1066,15 @@ function Products() {
               )}
 
               {/* QUANTITY SELECTOR INSIDE MODAL */}
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '12px' }}>
                 <label
                   htmlFor="modal-quantity-option"
                   style={{
                     display: 'block',
-                    fontSize: '13px',
+                    fontSize: '12px',
                     fontWeight: 600,
                     color: '#26382d',
-                    marginBottom: '6px',
+                    marginBottom: '4px',
                   }}
                 >
                   Choose quantity option:
@@ -1092,12 +1092,12 @@ function Products() {
                     }
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '8px 10px',
                       border: '1px solid #cdd8d0',
-                      borderRadius: '10px',
+                      borderRadius: '8px',
                       background: '#fff',
                       color: '#26382d',
-                      fontSize: '14px',
+                      fontSize: '12.5px',
                       cursor: 'pointer',
                     }}
                   >
@@ -1108,7 +1108,7 @@ function Products() {
                     ))}
                   </select>
                 ) : (
-                  <p style={{ fontSize: '13px', color: '#b45309', margin: 0 }}>
+                  <p style={{ fontSize: '12px', color: '#b45309', margin: 0 }}>
                     No available quantity options
                   </p>
                 )}
@@ -1118,19 +1118,18 @@ function Products() {
               <div
                 style={{
                   display: 'flex',
-                  flexWrap: 'wrap',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '12px',
-                  paddingTop: '14px',
+                  gap: '10px',
+                  paddingTop: '10px',
                   borderTop: '1px solid #e7ede8',
                 }}
               >
-                <div style={{ minWidth: '120px' }}>
+                <div style={{ minWidth: '100px' }}>
                   <strong
                     style={{
                       display: 'block',
-                      fontSize: '1.25rem',
+                      fontSize: '1.08rem',
                       color: '#1b5e20',
                     }}
                   >
@@ -1139,10 +1138,10 @@ function Products() {
                       : 'Unavailable'}
                   </strong>
                   {modalSelectedOption && (
-                    <span style={{ fontSize: '12px', color: '#647568' }}>
+                    <span style={{ fontSize: '11px', color: '#647568' }}>
                       per {modalSelectedOption.option_label} •{' '}
                       {modalAvailablePacks > 0
-                        ? `${modalAvailablePacks} pack(s) available`
+                        ? `${modalAvailablePacks} pack(s)`
                         : 'Out of stock'}
                     </span>
                   )}
@@ -1160,9 +1159,9 @@ function Products() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px',
-                    padding: '11px 18px',
-                    borderRadius: '12px',
+                    gap: '6px',
+                    padding: '9px 14px',
+                    borderRadius: '10px',
                     border: 'none',
                     background:
                       !modalSelectedOption || modalAvailablePacks <= 0
@@ -1170,7 +1169,7 @@ function Products() {
                         : '#1b5e20',
                     color: '#ffffff',
                     fontWeight: 600,
-                    fontSize: '14px',
+                    fontSize: '12.5px',
                     whiteSpace: 'nowrap',
                     flexShrink: 0,
                     cursor:
@@ -1179,7 +1178,7 @@ function Products() {
                         : 'pointer',
                   }}
                 >
-                  <ShoppingCart size={18} />
+                  <ShoppingCart size={15} />
                   <span>
                     {addingProduct === activeProduct.product_id
                       ? 'Adding...'
