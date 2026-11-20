@@ -1,7 +1,66 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import '../App.css'
+
+const getPasswordStrength = (pwd) => {
+  if (!pwd) {
+    return {
+      score: 0,
+      label: '',
+      color: '#e5e7eb',
+      checks: {
+        length: false,
+        upper: false,
+        number: false,
+        special: false,
+      },
+    }
+  }
+
+  const checks = {
+    length: pwd.length >= 8,
+    upper: /[A-Z]/.test(pwd),
+    number: /\d/.test(pwd),
+    special: /[^A-Za-z0-9]/.test(pwd),
+  }
+
+  const passedCount = Object.values(checks).filter(Boolean).length
+
+  if (pwd.length < 6 || passedCount <= 1) {
+    return {
+      score: 1,
+      label: 'Weak',
+      color: '#dc2626',
+      checks,
+    }
+  }
+
+  if (passedCount === 2) {
+    return {
+      score: 2,
+      label: 'Fair',
+      color: '#d97706',
+      checks,
+    }
+  }
+
+  if (passedCount === 3) {
+    return {
+      score: 3,
+      label: 'Good',
+      color: '#2563eb',
+      checks,
+    }
+  }
+
+  return {
+    score: 4,
+    label: 'Strong',
+    color: '#16a34a',
+    checks,
+  }
+}
 
 function Register() {
   const navigate = useNavigate()
@@ -16,9 +75,20 @@ function Register() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
+  const [capsLockPassword, setCapsLockPassword] = useState(false)
+  const [capsLockConfirm, setCapsLockConfirm] = useState(false)
+
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const strength = useMemo(() => getPasswordStrength(password), [password])
+
+  const updateCapsLock = (e, setter) => {
+    if (typeof e.getModifierState === 'function') {
+      setter(e.getModifierState('CapsLock'))
+    }
+  }
 
   const handleRegister = async (e) => {
     e.preventDefault()
@@ -26,15 +96,13 @@ function Register() {
     setError('')
     setSuccess('')
 
-    // CHECK PASSWORD
     if (password !== confirmPassword) {
       setError('Passwords do not match.')
       return
     }
 
-    // CHECK PASSWORD LENGTH
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
       return
     }
 
@@ -42,17 +110,17 @@ function Register() {
       setLoading(true)
 
       const response = await fetch(
-        'http://localhost:5000/api/users',
+        'https://ani-malay-production.up.railway.app/api/users',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            full_name: fullName,
-            email: email,
-            contact_number: contactNumber,
-            address: address,
+            full_name: fullName.trim(),
+            email: email.trim(),
+            contact_number: contactNumber.trim(),
+            address: address.trim(),
             password: password,
             role: 'consumer',
           }),
@@ -68,7 +136,6 @@ function Register() {
 
       setSuccess('Account created successfully!')
 
-      // CLEAR FORM
       setFullName('')
       setEmail('')
       setContactNumber('')
@@ -76,13 +143,11 @@ function Register() {
       setPassword('')
       setConfirmPassword('')
 
-      // GO TO LOGIN
       setTimeout(() => {
         navigate('/login')
       }, 1500)
-
-    } catch (error) {
-      console.error('Registration error:', error)
+    } catch (err) {
+      console.error('Registration error:', err)
 
       setError(
         'Unable to connect to the server. Please make sure the backend is running.'
@@ -94,15 +159,12 @@ function Register() {
 
   return (
     <section className="login-page">
-
       <div className="login-card">
-
         <h2>Create an Account</h2>
 
         <p>Register as a Consumer</p>
 
         <form onSubmit={handleRegister}>
-
           {/* FULL NAME */}
           <div className="form-group">
             <label>Full Name</label>
@@ -135,7 +197,7 @@ function Register() {
 
             <input
               type="tel"
-              placeholder="Enter your contact number"
+              placeholder="Enter your contact number (e.g. 0917...)"
               value={contactNumber}
               onChange={(e) => setContactNumber(e.target.value)}
               required
@@ -160,29 +222,61 @@ function Register() {
             <label>Password</label>
 
             <div className="password-input">
-
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Create a password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyUp={(e) => updateCapsLock(e, setCapsLockPassword)}
+                onKeyDown={(e) => updateCapsLock(e, setCapsLockPassword)}
+                onFocus={(e) => updateCapsLock(e, setCapsLockPassword)}
+                onBlur={() => setCapsLockPassword(false)}
                 required
               />
 
               <button
                 type="button"
                 className="password-toggle"
-                onClick={() =>
-                  setShowPassword(!showPassword)
-                }
+                onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword
-                  ? <EyeOff size={18} />
-                  : <Eye size={18} />
-                }
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
-
             </div>
+
+            {capsLockPassword && (
+              <small style={{ color: '#d97706', display: 'block', marginTop: '0.3rem' }}>
+                Warning: Caps Lock is ON.
+              </small>
+            )}
+
+            {password && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                  <span>Password strength:</span>
+                  <strong style={{ color: strength.color }}>{strength.label}</strong>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '6px' }}>
+                  {[1, 2, 3, 4].map((level) => (
+                    <div
+                      key={level}
+                      style={{
+                        height: '5px',
+                        borderRadius: '999px',
+                        backgroundColor: strength.score >= level ? strength.color : '#e5e7eb',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div style={{ fontSize: '11.5px', color: '#4b5563', lineHeight: 1.45 }}>
+                  <div>{strength.checks.length ? '✓' : '•'} At least 8 characters</div>
+                  <div>{strength.checks.upper ? '✓' : '•'} At least 1 uppercase letter (A-Z)</div>
+                  <div>{strength.checks.number ? '✓' : '•'} At least 1 number (0-9)</div>
+                  <div>{strength.checks.special ? '✓' : '•'} At least 1 special symbol (!@#$)</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* CONFIRM PASSWORD */}
@@ -190,37 +284,44 @@ function Register() {
             <label>Confirm Password</label>
 
             <div className="password-input">
-
               <input
-                type={
-                  showConfirmPassword
-                    ? 'text'
-                    : 'password'
-                }
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Confirm your password"
                 value={confirmPassword}
-                onChange={(e) =>
-                  setConfirmPassword(e.target.value)
-                }
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyUp={(e) => updateCapsLock(e, setCapsLockConfirm)}
+                onKeyDown={(e) => updateCapsLock(e, setCapsLockConfirm)}
+                onFocus={(e) => updateCapsLock(e, setCapsLockConfirm)}
+                onBlur={() => setCapsLockConfirm(false)}
                 required
               />
 
               <button
                 type="button"
                 className="password-toggle"
-                onClick={() =>
-                  setShowConfirmPassword(
-                    !showConfirmPassword
-                  )
-                }
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                {showConfirmPassword
-                  ? <EyeOff size={18} />
-                  : <Eye size={18} />
-                }
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
-
             </div>
+
+            {capsLockConfirm && (
+              <small style={{ color: '#d97706', display: 'block', marginTop: '0.3rem' }}>
+                Warning: Caps Lock is ON.
+              </small>
+            )}
+
+            {confirmPassword && (
+              <small
+                style={{
+                  color: password === confirmPassword ? '#16a34a' : '#dc2626',
+                  display: 'block',
+                  marginTop: '0.3rem',
+                }}
+              >
+                {password === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
+              </small>
+            )}
           </div>
 
           {/* ERROR */}
@@ -255,26 +356,18 @@ function Register() {
             className="login-submit"
             disabled={loading}
           >
-            {loading
-              ? 'Creating Account...'
-              : 'Register'}
+            {loading ? 'Creating Account...' : 'Register'}
           </button>
-
         </form>
 
         {/* LOGIN */}
         <p className="register-text">
-
           Already have an account?{' '}
-
-          <a href="/login">
+          <Link to="/login">
             Login
-          </a>
-
+          </Link>
         </p>
-
       </div>
-
     </section>
   )
 }

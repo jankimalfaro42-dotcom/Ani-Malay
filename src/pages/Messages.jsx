@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import './Messages.css'
 
-const API_URL = 'http://localhost:5000/api/messages'
+const API_URL = 'https://ani-malay-production.up.railway.app/api/messages'
 
 function Messages() {
   const [messages, setMessages] = useState([])

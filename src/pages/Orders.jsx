@@ -54,7 +54,7 @@ const savedUser = localStorage.getItem("user");
     }
     const user = JSON.parse(savedUser);
     const response = await fetch(
-      `http://localhost:5000/api/orders?user_id=${user.user_id}`
+      `https://ani-malay-production.up.railway.app/api/orders?user_id=${user.user_id}`
     );
     if (!response.ok) {
       throw new Error("Failed to load orders");
@@ -80,7 +80,7 @@ return;
 try {
   setDetailsLoading(orderId);
   const response = await fetch(
-    `http://localhost:5000/api/orders/${orderId}`
+    `https://ani-malay-production.up.railway.app/api/orders/${orderId}`
   );
   if (!response.ok) {
     throw new Error("Failed to load order details");

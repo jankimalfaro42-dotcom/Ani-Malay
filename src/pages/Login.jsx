@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import '../App.css'
@@ -6,8 +5,10 @@ import '../App.css'
 function Login() {
   const navigate = useNavigate()
 
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [capsLockOn, setCapsLockOn] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [logoTaps, setLogoTaps] = useState(0)
@@ -23,22 +24,35 @@ function Login() {
     }
   }
 
+  const checkCapsLock = (e) => {
+    if (typeof e.getModifierState === 'function') {
+      setCapsLockOn(e.getModifierState('CapsLock'))
+    }
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
+
+    const cleanIdentifier = identifier.trim()
+
+    if (!cleanIdentifier || !password) {
+      setError('Please enter your email or mobile number and password.')
+      return
+    }
 
     try {
       setLoading(true)
 
       const response = await fetch(
-        'http://localhost:5000/api/users/login',
+        'https://ani-malay-production.up.railway.app/api/users/login',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: email.trim(),
+            identifier: cleanIdentifier,
             password: password,
           }),
         }
@@ -68,9 +82,8 @@ function Login() {
 
       // Redirect consumer to homepage
       navigate('/')
-
-    } catch (error) {
-      console.error('Login error:', error)
+    } catch (err) {
+      console.error('Login error:', err)
 
       setError(
         'Unable to connect to the server. Please make sure the backend is running.'
@@ -83,7 +96,6 @@ function Login() {
   return (
     <section className="login-page">
       <div className="login-card">
-
         <button
           type="button"
           onClick={handleLogoTap}
@@ -107,15 +119,15 @@ function Login() {
         <p>Login to your account</p>
 
         <form onSubmit={handleLogin}>
-
           <div className="form-group">
-            <label>Email Address</label>
+            <label>Email or Mobile Number</label>
 
             <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="Enter your email or mobile number (e.g. 0917...)"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              autoComplete="username"
               required
             />
           </div>
@@ -123,13 +135,41 @@ function Login() {
           <div className="form-group">
             <label>Password</label>
 
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="password-input-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyUp={checkCapsLock}
+                onKeyDown={checkCapsLock}
+                onFocus={checkCapsLock}
+                onBlur={() => setCapsLockOn(false)}
+                autoComplete="current-password"
+                required
+                style={{ width: '100%', paddingRight: '3.5rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                style={{
+                  position: 'absolute',
+                  right: '0.6rem',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+
+            {capsLockOn && (
+              <small style={{ color: '#d97706', display: 'block', marginTop: '0.3rem' }}>
+                Warning: Caps Lock is ON.
+              </small>
+            )}
           </div>
 
           <div className="forgot-password-link">
@@ -151,7 +191,6 @@ function Login() {
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
-
         </form>
 
         <p className="register-text">
@@ -160,7 +199,6 @@ function Login() {
             Register
           </Link>
         </p>
-
       </div>
     </section>
   )

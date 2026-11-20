@@ -15,7 +15,7 @@ function Livestock() {
 
   // FETCH LIVESTOCK PRODUCTS
   useEffect(() => {
-    fetch('http://localhost:5000/api/products?status=active')
+    fetch('https://ani-malay-production.up.railway.app/api/products?status=active')
       .then((response) => {
         if (!response.ok) {
           throw new Error('Failed to fetch livestock products')
@@ -72,7 +72,7 @@ function Livestock() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/cart', {
+      const response = await fetch('https://ani-malay-production.up.railway.app/api/cart', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

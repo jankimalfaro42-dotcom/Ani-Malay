@@ -36,7 +36,7 @@ import {
 import '../App.css'
 import './MyAccount.css'
 
-const API_URL = 'http://localhost:5000'
+const API_URL = 'https://ani-malay-production.up.railway.app'
 
 const DELIVERY_AREAS = [
   { value: 'malay_mainland', label: 'Malay (Mainland)', fee: 0 },

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import './AdminDeliveries.css'
 
-const API = 'http://localhost:5000/api'
+const API = 'https://ani-malay-production.up.railway.app/api'
 
 const formatCurrency = (amount) =>
   `₱${Number(amount || 0).toLocaleString('en-PH', {

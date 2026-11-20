@@ -26,7 +26,7 @@ function ForgotPassword() {
       setLoading(true)
 
       const response = await fetch(
-        'http://localhost:5000/api/users/forgot-password',
+        'https://ani-malay-production.up.railway.app/api/users/forgot-password',
         {
           method: 'POST',
 

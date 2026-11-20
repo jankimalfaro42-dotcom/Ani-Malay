@@ -5,7 +5,7 @@ import { notify } from '../utils/notify'
 
 import '../App.css'
 
-const API_URL = 'http://localhost:5000'
+const API_URL = 'https://ani-malay-production.up.railway.app'
 
 const DELIVERY_AREAS = {
   malay_mainland: { label: 'Malay (Mainland)', fee: 0 },

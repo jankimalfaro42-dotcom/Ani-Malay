@@ -22,7 +22,7 @@ function AdminRoute({ children }) {
 
       try {
         const response = await fetch(
-          'http://localhost:5000/api/users/me',
+          'https://ani-malay-production.up.railway.app/api/users/me',
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -16,7 +16,7 @@ import {
 import { Link } from 'react-router-dom'
 import './Admin.css'
 
-const API_URL = 'http://localhost:5000/api'
+const API_URL = 'https://ani-malay-production.up.railway.app/api'
 const REFRESH_INTERVAL = 30000
 
 function getArray(data) {

@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Package,
@@ -16,11 +15,13 @@ import {
   ToggleLeft,
   ToggleRight,
   ArrowLeft,
+  Trash2,
 } from 'lucide-react'
 import './Admin.css'
 
-const API_URL = 'http://localhost:5000/api'
-const SERVER_URL = 'http://localhost:5000'
+const MAX_PRODUCT_IMAGES = 10
+const API_URL = 'https://ani-malay-production.up.railway.app/api'
+const SERVER_URL = 'https://ani-malay-production.up.railway.app'
 
 const emptyForm = {
   product_name: '',
@@ -29,7 +30,7 @@ const emptyForm = {
   price: '',
   unit: '',
   stock_quantity: '',
-  image: null,
+  images: [],
   status: 'active',
   is_featured: false,
 }
@@ -46,15 +47,22 @@ function getProductId(product) {
 }
 
 function getImageUrl(image) {
-  if (!image || typeof image !== 'string') return ''
+  if (!image) return ''
+
+  if (typeof image === 'object') {
+    const nested = image.image_url || image.url || image.path || ''
+    return getImageUrl(nested)
+  }
+
+  if (typeof image !== 'string') return ''
 
   const imagePath = image.trim()
-
   if (!imagePath) return ''
 
   if (
     imagePath.startsWith('http://') ||
-    imagePath.startsWith('https://')
+    imagePath.startsWith('https://') ||
+    imagePath.startsWith('blob:')
   ) {
     return imagePath
   }
@@ -76,6 +84,33 @@ function getImageUrl(image) {
   return `${SERVER_URL}/${imagePath.replace(/^\/+/, '')}`
 }
 
+function getExistingGalleryItems(product) {
+  if (!product) return []
+
+  if (Array.isArray(product.product_images) && product.product_images.length > 0) {
+    return product.product_images.map((item, idx) => ({
+      image_id: item.image_id ?? null,
+      url: getImageUrl(item.image_url || item.url || item),
+      key: item.image_id ? `db-${item.image_id}` : `idx-${idx}`,
+    }))
+  }
+
+  const urls = []
+  if (Array.isArray(product.images)) {
+    urls.push(...product.images)
+  }
+  if (product.image) {
+    urls.unshift(product.image)
+  }
+
+  const uniqueUrls = [...new Set(urls.map(u => getImageUrl(u)).filter(Boolean))]
+  return uniqueUrls.map((url, idx) => ({
+    image_id: null,
+    url,
+    key: `url-${idx}`,
+  }))
+}
+
 function AdminProducts() {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -90,7 +125,11 @@ function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState(null)
   const [formData, setFormData] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
-  const [previewImage, setPreviewImage] = useState('')
+
+  // Multi-image states (up to 10 photos)
+  const [newImagePreviews, setNewImagePreviews] = useState([])
+  const [existingImages, setExistingImages] = useState([])
+  const [deletingImageId, setDeletingImageId] = useState(null)
 
   // QUANTITY OPTIONS STATES
   const [showOptionsModal, setShowOptionsModal] = useState(false)
@@ -101,6 +140,14 @@ function AdminProducts() {
   const [optionError, setOptionError] = useState('')
   const [editingOption, setEditingOption] = useState(null)
   const [optionForm, setOptionForm] = useState(emptyOptionForm)
+
+  const clearNewPreviews = previews => {
+    previews.forEach(item => {
+      if (item.url && item.url.startsWith('blob:')) {
+        URL.revokeObjectURL(item.url)
+      }
+    })
+  }
 
   const fetchProducts = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true)
@@ -189,22 +236,26 @@ function AdminProducts() {
   }, [products, selectedCategory, searchTerm])
 
   // ========================================
-  // PRODUCT MODAL
+  // PRODUCT MODAL (UP TO 10 PHOTOS)
   // ========================================
 
   const openAddModal = () => {
+    clearNewPreviews(newImagePreviews)
     setEditingProduct(null)
 
     setFormData({
       ...emptyForm,
       category_id: categories[0]?.category_id || '',
+      images: [],
     })
 
-    setPreviewImage('')
+    setExistingImages([])
+    setNewImagePreviews([])
     setShowModal(true)
   }
 
   const openEditModal = product => {
+    clearNewPreviews(newImagePreviews)
     setEditingProduct(product)
 
     setFormData({
@@ -214,43 +265,70 @@ function AdminProducts() {
       price: product.price ?? '',
       unit: product.unit || '',
       stock_quantity: product.stock_quantity ?? '',
-      image: null,
+      images: [],
       status: product.status || 'active',
       is_featured: Boolean(
         Number(product.is_featured) || product.is_featured === true
       ),
     })
 
-    setPreviewImage(
-      getImageUrl(product.image_url || product.image)
-    )
-
+    setExistingImages(getExistingGalleryItems(product))
+    setNewImagePreviews([])
     setShowModal(true)
   }
 
   const closeModal = () => {
     if (saving) return
 
+    clearNewPreviews(newImagePreviews)
     setShowModal(false)
     setEditingProduct(null)
     setFormData(emptyForm)
-    setPreviewImage('')
+    setExistingImages([])
+    setNewImagePreviews([])
   }
 
   const handleChange = event => {
     const { name, value, type, checked, files } = event.target
 
     if (type === 'file') {
-      const file = files?.[0]
+      const selectedFiles = Array.from(files || [])
+      if (!selectedFiles.length) return
 
-      if (!file) return
+      const currentExistingCount = existingImages.length
+      const currentNewCount = formData.images.length
+      const remainingSlots =
+        MAX_PRODUCT_IMAGES - (currentExistingCount + currentNewCount)
+
+      if (remainingSlots <= 0) {
+        alert(
+          `Maximum of ${MAX_PRODUCT_IMAGES} photos per product reached.`
+        )
+        event.target.value = ''
+        return
+      }
+
+      const filesToAdd = selectedFiles.slice(0, remainingSlots)
+
+      if (selectedFiles.length > remainingSlots) {
+        alert(
+          `Only ${remainingSlots} more photo(s) can be added (maximum of ${MAX_PRODUCT_IMAGES} photos per product).`
+        )
+      }
+
+      const addedPreviews = filesToAdd.map((file, idx) => ({
+        id: `${Date.now()}-${idx}-${file.name}`,
+        name: file.name,
+        url: URL.createObjectURL(file),
+      }))
 
       setFormData(previous => ({
         ...previous,
-        image: file,
+        images: [...previous.images, ...filesToAdd],
       }))
 
-      setPreviewImage(URL.createObjectURL(file))
+      setNewImagePreviews(previous => [...previous, ...addedPreviews])
+      event.target.value = ''
       return
     }
 
@@ -258,6 +336,56 @@ function AdminProducts() {
       ...previous,
       [name]: type === 'checkbox' ? checked : value,
     }))
+  }
+
+  const removeNewImageAtIndex = indexToRemove => {
+    const targetPreview = newImagePreviews[indexToRemove]
+    if (targetPreview?.url && targetPreview.url.startsWith('blob:')) {
+      URL.revokeObjectURL(targetPreview.url)
+    }
+
+    setFormData(previous => ({
+      ...previous,
+      images: previous.images.filter((_, idx) => idx !== indexToRemove),
+    }))
+
+    setNewImagePreviews(previous =>
+      previous.filter((_, idx) => idx !== indexToRemove)
+    )
+  }
+
+  const handleDeleteExistingImage = async imgItem => {
+    if (!editingProduct) return
+
+    if (!imgItem.image_id) {
+      setExistingImages(prev => prev.filter(item => item.key !== imgItem.key))
+      return
+    }
+
+    const productId = getProductId(editingProduct)
+    setDeletingImageId(imgItem.image_id)
+
+    try {
+      const response = await fetch(
+        `${API_URL}/products/${productId}/images/${imgItem.image_id}`,
+        { method: 'DELETE' }
+      )
+
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Unable to delete photo.')
+      }
+
+      setExistingImages(prev =>
+        prev.filter(item => item.image_id !== imgItem.image_id)
+      )
+      await fetchProducts(true)
+    } catch (err) {
+      alert(err.message || 'Unable to delete photo.')
+    } finally {
+      setDeletingImageId(null)
+    }
   }
 
   const handleSubmit = async event => {
@@ -286,8 +414,16 @@ function AdminProducts() {
       return
     }
 
-    if (!editingProduct && !formData.image) {
-      alert('Please upload a product image.')
+    const totalPhotos = existingImages.length + formData.images.length
+    if (!editingProduct && formData.images.length === 0) {
+      alert('Please upload at least 1 product image (up to 10 photos).')
+      return
+    }
+
+    if (totalPhotos > MAX_PRODUCT_IMAGES) {
+      alert(
+        `Maximum of ${MAX_PRODUCT_IMAGES} photos per product is allowed.`
+      )
       return
     }
 
@@ -302,9 +438,9 @@ function AdminProducts() {
     payload.append('status', formData.status)
     payload.append('is_featured', formData.is_featured ? '1' : '0')
 
-    if (formData.image) {
-      payload.append('image', formData.image)
-    }
+    formData.images.forEach(file => {
+      payload.append('images', file)
+    })
 
     setSaving(true)
 
@@ -335,10 +471,12 @@ function AdminProducts() {
           : 'Product added successfully! You can now add its quantity options.'
       )
 
+      clearNewPreviews(newImagePreviews)
       setShowModal(false)
       setEditingProduct(null)
       setFormData(emptyForm)
-      setPreviewImage('')
+      setExistingImages([])
+      setNewImagePreviews([])
 
       await fetchProducts(true)
     } catch (err) {
@@ -648,6 +786,8 @@ function AdminProducts() {
   const optionIsAvailable = option =>
     Number(option.is_available) === 1
 
+  const totalSelectedImagesCount = existingImages.length + formData.images.length
+
   // ========================================
   // RENDER
   // ========================================
@@ -817,9 +957,10 @@ function AdminProducts() {
               }}
             >
               {filteredProducts.map(product => {
-                const productImage = getImageUrl(
-                  product.image_url || product.image
-                )
+                const galleryItems = getExistingGalleryItems(product)
+                const productImage =
+                  galleryItems[0]?.url ||
+                  getImageUrl(product.image_url || product.image)
 
                 const stock = getStock(product)
                 const featured = isFeatured(product)
@@ -849,6 +990,7 @@ function AdminProducts() {
                     <div
                       className="admin-products-image-wrap"
                       style={{
+                        position: 'relative',
                         width: '100%',
                         height: '175px',
                         flexShrink: 0,
@@ -876,6 +1018,24 @@ function AdminProducts() {
                           <Package size={35} />
                           <span>No image</span>
                         </div>
+                      )}
+
+                      {galleryItems.length > 1 && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            background: 'rgba(20, 46, 28, 0.78)',
+                            color: '#fff',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '999px',
+                          }}
+                        >
+                          {galleryItems.length} photos
+                        </span>
                       )}
                     </div>
 
@@ -1062,7 +1222,8 @@ function AdminProducts() {
                 </h2>
 
                 <p>
-                  Update product information, price, and available stock.
+                  Update product information, price, stock, and up to{' '}
+                  {MAX_PRODUCT_IMAGES} photos.
                 </p>
               </div>
 
@@ -1080,35 +1241,202 @@ function AdminProducts() {
               <div className="admin-products-modal-body">
 
                 <div className="admin-products-image-field">
-                  <label>Product Image</label>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    <label style={{ margin: 0 }}>
+                      Product Photos ({totalSelectedImagesCount}/{MAX_PRODUCT_IMAGES})
+                    </label>
+                    <span style={{ fontSize: '12px', color: '#526357', fontWeight: 600 }}>
+                      Max {MAX_PRODUCT_IMAGES} photos
+                    </span>
+                  </div>
+
+                  {/* EXISTING SAVED PHOTOS (WHEN EDITING) */}
+                  {existingImages.length > 0 && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#294d35',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        Current Photos ({existingImages.length})
+                      </span>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))',
+                          gap: '8px',
+                        }}
+                      >
+                        {existingImages.map((imgItem, idx) => (
+                          <div
+                            key={imgItem.key}
+                            style={{
+                              position: 'relative',
+                              aspectRatio: '1 / 1',
+                              borderRadius: '10px',
+                              overflow: 'hidden',
+                              border: '1px solid #d5e3d7',
+                              background: '#f4f8f4',
+                            }}
+                          >
+                            <img
+                              src={imgItem.url}
+                              alt={`Saved photo ${idx + 1}`}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                            {imgItem.image_id && (
+                              <button
+                                type="button"
+                                title="Remove photo"
+                                disabled={deletingImageId === imgItem.image_id}
+                                onClick={() => handleDeleteExistingImage(imgItem)}
+                                style={{
+                                  position: 'absolute',
+                                  top: '4px',
+                                  right: '4px',
+                                  width: '22px',
+                                  height: '22px',
+                                  borderRadius: '50%',
+                                  border: 'none',
+                                  background: 'rgba(185, 28, 28, 0.9)',
+                                  color: '#fff',
+                                  display: 'grid',
+                                  placeItems: 'center',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NEW SELECTED PHOTO PREVIEWS */}
+                  {newImagePreviews.length > 0 && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#2d7752',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        New Photos to Upload ({newImagePreviews.length})
+                      </span>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))',
+                          gap: '8px',
+                        }}
+                      >
+                        {newImagePreviews.map((preview, idx) => (
+                          <div
+                            key={preview.id}
+                            style={{
+                              position: 'relative',
+                              aspectRatio: '1 / 1',
+                              borderRadius: '10px',
+                              overflow: 'hidden',
+                              border: '1px solid #b8d8c0',
+                              background: '#f1f8f2',
+                            }}
+                          >
+                            <img
+                              src={preview.url}
+                              alt={preview.name}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                            <button
+                              type="button"
+                              title="Remove selected photo"
+                              onClick={() => removeNewImageAtIndex(idx)}
+                              style={{
+                                position: 'absolute',
+                                top: '4px',
+                                right: '4px',
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                background: 'rgba(18, 36, 24, 0.82)',
+                                color: '#fff',
+                                display: 'grid',
+                                placeItems: 'center',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="admin-products-image-upload">
-                    {previewImage ? (
-                      <img
-                        src={previewImage}
-                        alt="Product preview"
-                      />
-                    ) : (
-                      <div className="admin-products-upload-placeholder">
-                        <ImagePlus size={30} />
-                        <span>Upload product image</span>
-                      </div>
-                    )}
+                    <div className="admin-products-upload-placeholder">
+                      <ImagePlus size={30} />
+                      <span>
+                        {totalSelectedImagesCount > 0
+                          ? `Add more photos (${MAX_PRODUCT_IMAGES - totalSelectedImagesCount} slot(s) left)`
+                          : `Upload up to ${MAX_PRODUCT_IMAGES} product photos`}
+                      </span>
+                    </div>
 
-                    <label className="admin-products-upload-button">
+                    <label
+                      className="admin-products-upload-button"
+                      style={{
+                        opacity:
+                          totalSelectedImagesCount >= MAX_PRODUCT_IMAGES ? 0.55 : 1,
+                        pointerEvents:
+                          totalSelectedImagesCount >= MAX_PRODUCT_IMAGES
+                            ? 'none'
+                            : 'auto',
+                      }}
+                    >
                       <ImagePlus size={16} />
-                      Choose Image
+                      Choose Photos
 
                       <input
                         type="file"
-                        name="image"
+                        name="images"
+                        multiple
                         accept="image/png,image/jpeg,image/webp"
                         onChange={handleChange}
                       />
                     </label>
                   </div>
 
-                  <small>Accepted formats: JPG, PNG, WEBP.</small>
+                  <small>
+                    Accepted formats: JPG, PNG, WEBP. Maximum of {MAX_PRODUCT_IMAGES}{' '}
+                    photos per product (up to 5MB each).
+                  </small>
                 </div>
 
                 <div className="admin-products-form-grid">

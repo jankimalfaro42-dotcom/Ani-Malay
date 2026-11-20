@@ -74,7 +74,7 @@ function Cart() {
       setError('')
 
       const response = await fetch(
-        `http://localhost:5000/api/cart/${userId}`,
+        `https://ani-malay-production.up.railway.app/api/cart/${userId}`,
         {
           method: 'GET',
           headers: getAuthHeaders(),
@@ -121,7 +121,7 @@ function Cart() {
     if (!image) return null
 
     if (image.startsWith('/uploads/')) {
-      return `http://localhost:5000${image}`
+      return `https://ani-malay-production.up.railway.app${image}`
     }
 
     return image
@@ -215,7 +215,7 @@ function Cart() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/cart/${cartItemId}`,
+        `https://ani-malay-production.up.railway.app/api/cart/${cartItemId}`,
         {
           method: 'PUT',
           headers: getAuthHeaders(true),
@@ -290,7 +290,7 @@ function Cart() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/cart/${cartItemId}`,
+        `https://ani-malay-production.up.railway.app/api/cart/${cartItemId}`,
         {
           method: 'DELETE',
           headers: getAuthHeaders(),

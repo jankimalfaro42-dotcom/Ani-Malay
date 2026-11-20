@@ -35,7 +35,7 @@ function EditProfile() {
       setLoading(true)
 
       const response = await fetch(
-        `http://localhost:5000/api/users/${user.user_id}`,
+        `https://ani-malay-production.up.railway.app/api/users/${user.user_id}`,
         {
           method: 'PUT',
 

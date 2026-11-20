@@ -19,7 +19,7 @@ import {
 
 import './AdminLayout.css'
 
-const API_URL = 'http://localhost:5000/api/messages'
+const API_URL = 'https://ani-malay-production.up.railway.app/api/messages'
 
 function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false)

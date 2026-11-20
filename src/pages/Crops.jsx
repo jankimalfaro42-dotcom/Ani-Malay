@@ -22,7 +22,7 @@ function Crops() {
         setError('')
 
         const response = await fetch(
-          'http://localhost:5000/api/products'
+          'https://ani-malay-production.up.railway.app/api/products'
         )
 
         const data = await response.json()
@@ -119,7 +119,7 @@ function Crops() {
 
     try {
       const response = await fetch(
-        'http://localhost:5000/api/cart',
+        'https://ani-malay-production.up.railway.app/api/cart',
         {
           method: 'POST',
           headers: {
@@ -153,7 +153,7 @@ function Crops() {
     if (!image) return null
 
     if (image.startsWith('/uploads/')) {
-      return `http://localhost:5000${image}`
+      return `https://ani-malay-production.up.railway.app${image}`
     }
 
     return image

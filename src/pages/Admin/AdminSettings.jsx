@@ -48,7 +48,7 @@ function AdminSettings() {
       setLoading(true)
 
       const response = await fetch(
-        'http://localhost:5000/api/users/admin/change-password',
+        'https://ani-malay-production.up.railway.app/api/users/admin/change-password',
         {
           method: 'POST',
           headers: {

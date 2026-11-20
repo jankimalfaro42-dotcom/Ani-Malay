@@ -12,8 +12,8 @@ import {
 } from 'lucide-react'
 import './AdminArchivedProducts.css'
 
-const API_URL = 'http://localhost:5000/api'
-const SERVER_URL = 'http://localhost:5000'
+const API_URL = 'https://ani-malay-production.up.railway.app/api'
+const SERVER_URL = 'https://ani-malay-production.up.railway.app'
 
 function getProductId(product) {
   return product.product_id ?? product.id

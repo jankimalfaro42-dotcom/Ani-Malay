@@ -10,8 +10,8 @@ import {
 } from 'lucide-react'
 import './AdminFeedbacks.css'
 
-const API_URL = 'http://localhost:5000/api/reviews'
-const SERVER_URL = 'http://localhost:5000'
+const API_URL = 'https://ani-malay-production.up.railway.app/api/reviews'
+const SERVER_URL = 'https://ani-malay-production.up.railway.app'
 
 function getProfilePicture(path) {
   if (!path) return null

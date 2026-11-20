@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -25,13 +24,14 @@ function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [loadingFeatured, setLoadingFeatured] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [brokenImages, setBrokenImages] = useState({})
 
   // FETCH FEATURED PRODUCTS
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
         const response = await fetch(
-          'http://localhost:5000/api/products'
+          'https://ani-malay-production.up.railway.app/api/products'
         )
 
         const data = await response.json()
@@ -124,7 +124,7 @@ function Home() {
 
     try {
       const response = await fetch(
-        'http://localhost:5000/api/cart',
+        'https://ani-malay-production.up.railway.app/api/cart',
         {
           method: 'POST',
           headers: {
@@ -165,7 +165,7 @@ function Home() {
     if (!image) return null
 
     if (image.startsWith('/uploads/')) {
-      return `http://localhost:5000${image}`
+      return `https://ani-malay-production.up.railway.app${image}`
     }
 
     return image
@@ -379,6 +379,7 @@ function Home() {
 
             {featuredProducts.map((product) => {
               const image = getProductImage(product.image)
+              const hasBrokenImage = Boolean(brokenImages[product.product_id])
               const stock = Number(product.stock_quantity || 0)
 
               return (
@@ -389,11 +390,17 @@ function Home() {
 
                   <div className="featured-image">
 
-                    {image ? (
+                    {image && !hasBrokenImage ? (
                       <img
                         src={image}
                         alt={product.product_name}
                         className="featured-product-image"
+                        onError={() =>
+                          setBrokenImages((prev) => ({
+                            ...prev,
+                            [product.product_id]: true,
+                          }))
+                        }
                       />
                     ) : (
                       <div

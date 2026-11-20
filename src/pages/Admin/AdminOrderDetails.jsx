@@ -15,7 +15,7 @@ import {
 import { Link, useParams } from 'react-router-dom'
 import './AdminOrderDetails.css'
 
-const API = 'http://localhost:5000/api'
+const API = 'https://ani-malay-production.up.railway.app/api'
 
 function AdminOrderDetails() {
   const { id } = useParams()

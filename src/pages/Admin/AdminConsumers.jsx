@@ -16,7 +16,7 @@ import {
 
 import './AdminConsumers.css'
 
-const API_URL = 'http://localhost:5000/api'
+const API_URL = 'https://ani-malay-production.up.railway.app/api'
 
 function getUsers(data) {
   if (Array.isArray(data)) return data
@@ -222,7 +222,7 @@ function AdminConsumers() {
                                 src={
                                   consumer.profile_picture.startsWith('http')
                                     ? consumer.profile_picture
-                                    : `http://localhost:5000/${consumer.profile_picture.replace(/^\/+/, '')}`
+                                    : `https://ani-malay-production.up.railway.app/${consumer.profile_picture.replace(/^\/+/, '')}`
                                 }
                                 alt=""
                               />
@@ -325,7 +325,7 @@ function AdminConsumers() {
                       src={
                         selectedConsumer.profile_picture.startsWith('http')
                           ? selectedConsumer.profile_picture
-                          : `http://localhost:5000/${selectedConsumer.profile_picture.replace(/^\/+/, '')}`
+                          : `https://ani-malay-production.up.railway.app/${selectedConsumer.profile_picture.replace(/^\/+/, '')}`
                       }
                       alt=""
                     />

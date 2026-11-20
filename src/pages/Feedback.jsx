@@ -13,8 +13,8 @@ import {
 import { Link } from 'react-router-dom'
 import './Feedback.css'
 
-const API_URL = 'http://localhost:5000/api'
-const SERVER_URL = 'http://localhost:5000'
+const API_URL = 'https://ani-malay-production.up.railway.app/api'
+const SERVER_URL = 'https://ani-malay-production.up.railway.app'
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024
 
 const CATEGORIES = [

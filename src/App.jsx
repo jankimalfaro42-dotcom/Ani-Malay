@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter,
   Routes,
@@ -143,7 +142,7 @@ function AppContent() {
     }, 2500)
 
     try {
-      const response = await fetch('http://localhost:5000/', {
+      const response = await fetch('https://ani-malay-production.up.railway.app/', {
         method: 'GET',
         cache: 'no-store',
         signal: controller.signal,
@@ -286,7 +285,7 @@ function AppContent() {
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/cart/${currentUser.user_id}`,
+        `https://ani-malay-production.up.railway.app/api/cart/${currentUser.user_id}`,
         {
           method: 'GET',
           headers: {
@@ -319,9 +318,9 @@ function AppContent() {
     }
   }
 
- useEffect(() => {
-  fetchCartCount()
-}, [user?.user_id, token])
+  useEffect(() => {
+    fetchCartCount()
+  }, [user?.user_id, token])
 
   useEffect(() => {
     const handleCartUpdated = () => fetchCartCount()
@@ -364,7 +363,7 @@ function AppContent() {
       }
 
       const response = await fetch(
-        'http://localhost:5000/api/messages/unread-count',
+        'https://ani-malay-production.up.railway.app/api/messages/unread-count',
         {
           headers: {
             Authorization: `Bearer ${savedToken}`,
@@ -456,8 +455,8 @@ function AppContent() {
       }
 
       const [notificationsResponse, countResponse] = await Promise.all([
-        fetch('http://localhost:5000/api/notifications', { headers }),
-        fetch('http://localhost:5000/api/notifications/unread-count', {
+        fetch('https://ani-malay-production.up.railway.app/api/notifications', { headers }),
+        fetch('https://ani-malay-production.up.railway.app/api/notifications/unread-count', {
           headers,
         }),
       ])
@@ -498,7 +497,7 @@ function AppContent() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/notifications/${notificationId}/read`,
+        `https://ani-malay-production.up.railway.app/api/notifications/${notificationId}/read`,
         {
           method: 'PUT',
           headers: {
@@ -521,7 +520,7 @@ function AppContent() {
 
     try {
       const response = await fetch(
-        'http://localhost:5000/api/notifications/read-all',
+        'https://ani-malay-production.up.railway.app/api/notifications/read-all',
         {
           method: 'PUT',
           headers: {
@@ -539,119 +538,156 @@ function AppContent() {
   }
 
   // =====================================
+  // REQUIRE CONSUMER LOGIN FOR HEADER ICONS
+  // =====================================
+
+  const requireConsumerLogin = (featureName) => {
+    if (!isLoggedIn) {
+      window.dispatchEvent(
+        new CustomEvent('aniMalayToast', {
+          detail: {
+            type: 'warning',
+            title: 'Login Required',
+            message: `Please login first to access your ${featureName}.`,
+          },
+        })
+      )
+      navigate('/login')
+      return false
+    }
+
+    if (isAdmin) {
+      window.dispatchEvent(
+        new CustomEvent('aniMalayToast', {
+          detail: {
+            type: 'warning',
+            title: 'Consumer Account Required',
+            message: `Please use a consumer account to access ${featureName}.`,
+          },
+        })
+      )
+      return false
+    }
+
+    return true
+  }
+
+  // =====================================
   // NOTIFICATION DROPDOWN
   // =====================================
 
-  const notificationBell =
-    isLoggedIn && !isAdmin ? (
-      <div className="notification-wrapper">
-        <button
-          type="button"
-          className="notification-bell-btn"
-          onClick={() => setShowNotifications((prev) => !prev)}
-          title="Notifications"
-          aria-label={`Notifications, ${unreadCount} unread`}
-          aria-expanded={showNotifications}
-        >
-          <Bell size={22} />
+  const notificationBell = !isAdmin ? (
+    <div className="notification-wrapper">
+      <button
+        type="button"
+        className="notification-bell-btn"
+        onClick={() => {
+          if (!requireConsumerLogin('notifications')) return
+          setShowNotifications((prev) => !prev)
+        }}
+        title="Notifications"
+        aria-label={`Notifications, ${unreadCount} unread`}
+        aria-expanded={showNotifications}
+      >
+        <Bell size={22} />
 
-          {unreadCount > 0 && (
-            <span className="notification-count">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
-          )}
-        </button>
+        {isLoggedIn && unreadCount > 0 && (
+          <span className="notification-count">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
 
-        {showNotifications && (
-          <div className="notification-dropdown">
-            <div className="notification-header">
-              <div>
-                <h3>Notifications</h3>
-                <span>{unreadCount} unread</span>
+      {isLoggedIn && showNotifications && (
+        <div className="notification-dropdown">
+          <div className="notification-header">
+            <div>
+              <h3>Notifications</h3>
+              <span>{unreadCount} unread</span>
+            </div>
+
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                className="mark-all-read-btn"
+                onClick={handleMarkAllAsRead}
+              >
+                <Check size={14} />
+                Mark all read
+              </button>
+            )}
+          </div>
+
+          <div className="notification-list">
+            {notifications.length === 0 ? (
+              <div className="notification-empty">
+                <Bell size={30} />
+                <p>No notifications yet</p>
+                <span>Order updates will appear here.</span>
               </div>
-
-              {unreadCount > 0 && (
+            ) : (
+              notifications.map((notification) => (
                 <button
                   type="button"
-                  className="mark-all-read-btn"
-                  onClick={handleMarkAllAsRead}
+                  key={notification.notification_id}
+                  className={`notification-item ${
+                    Number(notification.is_read) === 0
+                      ? 'unread'
+                      : ''
+                  }`}
+                  onClick={() => {
+                    if (Number(notification.is_read) === 0) {
+                      handleMarkAsRead(
+                        notification.notification_id
+                      )
+                    }
+
+                    setShowNotifications(false)
+                    navigate('/orders')
+                  }}
                 >
-                  <Check size={14} />
-                  Mark all read
+                  <div className="notification-item-icon">
+                    <Bell size={18} />
+                  </div>
+
+                  <div className="notification-item-content">
+                    <strong>{notification.title}</strong>
+                    <p>{notification.message}</p>
+                    <span>
+                      {new Date(
+                        notification.created_at
+                      ).toLocaleString('en-PH', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+
+                  {Number(notification.is_read) === 0 && (
+                    <span className="notification-unread-dot" />
+                  )}
                 </button>
-              )}
-            </div>
-
-            <div className="notification-list">
-              {notifications.length === 0 ? (
-                <div className="notification-empty">
-                  <Bell size={30} />
-                  <p>No notifications yet</p>
-                  <span>Order updates will appear here.</span>
-                </div>
-              ) : (
-                notifications.map((notification) => (
-                  <button
-                    type="button"
-                    key={notification.notification_id}
-                    className={`notification-item ${
-                      Number(notification.is_read) === 0
-                        ? 'unread'
-                        : ''
-                    }`}
-                    onClick={() => {
-                      if (Number(notification.is_read) === 0) {
-                        handleMarkAsRead(
-                          notification.notification_id
-                        )
-                      }
-
-                      setShowNotifications(false)
-                      navigate('/orders')
-                    }}
-                  >
-                    <div className="notification-item-icon">
-                      <Bell size={18} />
-                    </div>
-
-                    <div className="notification-item-content">
-                      <strong>{notification.title}</strong>
-                      <p>{notification.message}</p>
-                      <span>
-                        {new Date(
-                          notification.created_at
-                        ).toLocaleString('en-PH', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-
-                    {Number(notification.is_read) === 0 && (
-                      <span className="notification-unread-dot" />
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
-
-            <button
-              type="button"
-              className="notification-view-orders"
-              onClick={() => {
-                setShowNotifications(false)
-                navigate('/orders')
-              }}
-            >
-              View My Orders
-            </button>
+              ))
+            )}
           </div>
-        )}
-      </div>
-    ) : null
+
+          <button
+            type="button"
+            className="notification-view-orders"
+            onClick={() => {
+              setShowNotifications(false)
+              navigate('/orders')
+            }}
+          >
+            View My Orders
+          </button>
+        </div>
+      )}
+    </div>
+  ) : null
 
   // =====================================
   // LOGOUT
@@ -728,42 +764,50 @@ function AppContent() {
 
           <div className="home-navbar-actions">
 
-            {isLoggedIn && !isAdmin && (
-              <NavLink
-                to="/messages"
+            {!isAdmin && (
+              <button
+                type="button"
                 className="home-header-icon message-icon-link"
                 title="Messages"
                 aria-label={`Messages, ${messageUnreadCount} unread`}
+                onClick={() => {
+                  if (!requireConsumerLogin('messages')) return
+                  navigate('/messages')
+                }}
               >
                 <MessageCircle size={22} />
 
-                {messageUnreadCount > 0 && (
+                {isLoggedIn && messageUnreadCount > 0 && (
                   <span className="message-unread-count">
                     {messageUnreadCount > 99
                       ? '99+'
                       : messageUnreadCount}
                   </span>
                 )}
-              </NavLink>
+              </button>
             )}
 
             {notificationBell}
 
-            {isLoggedIn && !isAdmin && (
-              <NavLink
-                to="/cart"
+            {!isAdmin && (
+              <button
+                type="button"
                 className="home-header-icon cart-button"
                 aria-label={`Shopping Cart, ${cartCount} items`}
                 title="Cart"
+                onClick={() => {
+                  if (!requireConsumerLogin('cart')) return
+                  navigate('/cart')
+                }}
               >
                 <ShoppingBag size={22} />
 
-                {cartCount > 0 && (
+                {isLoggedIn && cartCount > 0 && (
                   <span className="cart-count">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
-              </NavLink>
+              </button>
             )}
 
           </div>

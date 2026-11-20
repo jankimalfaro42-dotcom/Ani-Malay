@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShieldCheck, Eye, EyeOff } from 'lucide-react'
@@ -6,19 +5,28 @@ import { ShieldCheck, Eye, EyeOff } from 'lucide-react'
 function AdminLogin() {
   const navigate = useNavigate()
 
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [capsLockOn, setCapsLockOn] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const checkCapsLock = (e) => {
+    if (typeof e.getModifierState === 'function') {
+      setCapsLockOn(e.getModifierState('CapsLock'))
+    }
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
     setError('')
 
-    if (!email.trim() || !password) {
-      setError('Please enter your email and password.')
+    const cleanIdentifier = identifier.trim()
+
+    if (!cleanIdentifier || !password) {
+      setError('Please enter your email or mobile number and password.')
       return
     }
 
@@ -26,14 +34,14 @@ function AdminLogin() {
 
     try {
       const response = await fetch(
-        'http://localhost:5000/api/users/admin-login',
+        'https://ani-malay-production.up.railway.app/api/users/admin-login',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: email.trim(),
+            identifier: cleanIdentifier,
             password,
           }),
         }
@@ -72,7 +80,8 @@ function AdminLogin() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px',
-        background: '#f3f7f4',
+        background:
+          'radial-gradient(circle at 15% 20%, rgba(45, 119, 82, 0.16) 0%, transparent 45%), linear-gradient(135deg, #eef5f0 0%, #f7faf8 100%)',
         boxSizing: 'border-box',
       }}
     >
@@ -83,7 +92,7 @@ function AdminLogin() {
           background: '#ffffff',
           padding: '35px',
           borderRadius: '18px',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
           boxSizing: 'border-box',
         }}
       >
@@ -115,7 +124,7 @@ function AdminLogin() {
 
         <form onSubmit={handleSubmit}>
           <label
-            htmlFor="admin-email"
+            htmlFor="admin-identifier"
             style={{
               display: 'block',
               marginBottom: '8px',
@@ -123,15 +132,15 @@ function AdminLogin() {
               color: '#333',
             }}
           >
-            Email Address
+            Email or Mobile Number
           </label>
 
           <input
-            id="admin-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Enter admin email"
+            id="admin-identifier"
+            type="text"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+            placeholder="Enter admin email or mobile number"
             autoComplete="username"
             required
             style={{
@@ -157,12 +166,16 @@ function AdminLogin() {
             Password
           </label>
 
-          <div style={{ position: 'relative', marginBottom: '20px' }}>
+          <div style={{ position: 'relative', marginBottom: '10px' }}>
             <input
               id="admin-password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              onKeyUp={checkCapsLock}
+              onKeyDown={checkCapsLock}
+              onFocus={checkCapsLock}
+              onBlur={() => setCapsLockOn(false)}
               placeholder="Enter admin password"
               autoComplete="current-password"
               required
@@ -195,6 +208,32 @@ function AdminLogin() {
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
+          </div>
+
+          {capsLockOn && (
+            <small
+              style={{
+                color: '#d97706',
+                display: 'block',
+                marginBottom: '12px',
+              }}
+            >
+              Warning: Caps Lock is ON.
+            </small>
+          )}
+
+          <div style={{ textAlign: 'right', marginBottom: '18px' }}>
+            <Link
+              to="/forgot-password"
+              style={{
+                color: '#2d7752',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: '500',
+              }}
+            >
+              Forgot Password?
+            </Link>
           </div>
 
           {error && (
