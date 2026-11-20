@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { Home } from 'lucide-react'
 import '../App.css'
 
 function Login() {
@@ -199,6 +200,24 @@ function Login() {
             Register
           </Link>
         </p>
+
+        <div style={{ marginTop: '10px', textAlign: 'center' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              color: '#1b5e20',
+              textDecoration: 'none',
+            }}
+          >
+            <Home size={15} strokeWidth={2} />
+            <span>Home page</span>
+          </Link>
+        </div>
       </div>
     </section>
   )
