@@ -1461,3 +1461,131 @@
     font-size: 8px;
   }
 }
+/* =========================================
+   ACCOUNT NOTIFICATIONS LIST
+   ========================================= */
+
+.account-notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-notification-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5ece6;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.account-notification-item:hover {
+  background: #f7faf8;
+}
+
+.account-notification-item.unread {
+  border-color: #b7d7c2;
+  background: #f2f9f4;
+}
+
+.account-notification-item strong {
+  display: block;
+  color: #203d2b;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.account-notification-item p {
+  margin: 0 0 6px;
+  color: #55655a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.account-notification-item span {
+  display: block;
+  color: #78847c;
+  font-size: 11px;
+}
+
+/* =========================================
+   LOGOUT CONFIRMATION MODAL (FB STYLE)
+   ========================================= */
+
+.logout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.logout-modal-card {
+  width: 100%;
+  max-width: 340px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 22px 20px;
+  text-align: center;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+}
+
+.logout-modal-card h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 750;
+  color: #203d2b;
+}
+
+.logout-modal-card p {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #67756b;
+  line-height: 1.5;
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.logout-cancel-btn,
+.logout-confirm-btn {
+  flex: 1;
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logout-cancel-btn {
+  background: #eef2ef;
+  color: #263b2d;
+}
+
+.logout-cancel-btn:hover {
+  background: #e1e8e3;
+}
+
+.logout-confirm-btn {
+  background: #d84b45;
+  color: #ffffff;
+}
+
+.logout-confirm-btn:hover {
+  background: #be3c36;
+}

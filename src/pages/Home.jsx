@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+
   Search,
   Wheat,
   Beef,
@@ -14,7 +15,7 @@ import {
   Truck,
   Sprout,
 } from 'lucide-react'
-
+import {notify} from '../utils/notify'
 import '../App.css'
 import './HomeRedesign.css'
 
@@ -93,7 +94,7 @@ function Home() {
     const savedUser = localStorage.getItem('user')
 
     if (!savedUser) {
-      alert('Please login first.')
+      notify('warning', 'Login Required', 'Please log in first.')
       navigate('/login')
       return
     }
@@ -104,13 +105,13 @@ function Home() {
       user = JSON.parse(savedUser)
     } catch (error) {
       console.error('User data error:', error)
-      alert('Please login again.')
+      notify('warning', 'Session Expired', 'Please log in again.')
       navigate('/login')
       return
     }
 
     if (!user?.user_id) {
-      alert('Please login again.')
+      notify('warning', 'Login Required', 'Please log in again.')
       navigate('/login')
       return
     }
@@ -118,7 +119,8 @@ function Home() {
     const stock = Number(product.stock_quantity || 0)
 
     if (stock <= 0) {
-      alert('This product is out of stock.')
+      notify('warning', 'Out of Stock', 'This product is currently out of stock.')
+
       return
     }
 
@@ -148,15 +150,11 @@ function Home() {
 
       window.dispatchEvent(new Event('cartUpdated'))
 
-      alert(
-        `${product.product_name} successfully added to cart!`
-      )
+      notify('success', 'Product Added', `${product.product_name} successfully added to cart!`)
     } catch (error) {
       console.error('Add to cart error:', error)
 
-      alert(
-        error.message || 'Failed to add product to cart.'
-      )
+      notify('error', 'Failed to Add Product', error.message || 'Failed to add product to cart.')
     }
   }
 

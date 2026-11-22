@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import '../App.css'
 import './Crops.css'
-
+import {notify} from '../utils/notify'
 function Crops() {
   const navigate = useNavigate()
 
@@ -90,7 +90,7 @@ function Crops() {
     const savedUser = localStorage.getItem('user')
 
     if (!savedUser) {
-      alert('Please login first.')
+      notify('warning', 'Login Required', 'Please log in first.')
       navigate('/login')
       return
     }
@@ -101,19 +101,19 @@ function Crops() {
       user = JSON.parse(savedUser)
     } catch (error) {
       console.error('User data error:', error)
-      alert('Please login again.')
+      notify('warning', 'Session Expired', 'Please log in again.')
       navigate('/login')
       return
     }
 
     if (!user?.user_id) {
-      alert('Please login again.')
+      notify('warning', 'Login Required', 'Please log in again.')
       navigate('/login')
       return
     }
 
     if (Number(product.stock_quantity || 0) <= 0) {
-      alert('This product is out of stock.')
+      notify('warning', 'Out of Stock', 'This product is currently out of stock.')
       return
     }
 
@@ -141,10 +141,10 @@ function Crops() {
         )
       }
 
-      alert('Product successfully added to cart!')
+      notify('success', 'Product Added', `${product.product_name} successfully added to cart!`)
     } catch (error) {
       console.error('Add to cart error:', error)
-      alert(error.message || 'Failed to add product to cart.')
+      notify('error', 'Failed to Add Product', error.message || 'Failed to add product to cart.')
     }
   }
 

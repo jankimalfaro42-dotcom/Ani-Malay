@@ -1,4 +1,3 @@
-
 import {
   useNavigate,
   useSearchParams,
@@ -73,13 +72,23 @@ function MyAccount() {
   const photoInputRef = useRef(null)
 
   const storedUser = localStorage.getItem('user')
-  const user = storedUser ? JSON.parse(storedUser) : null
+  let initialUser = null
+  if (storedUser) {
+    try {
+      initialUser = JSON.parse(storedUser)
+    } catch (error) {
+      console.error('Stored user parse error:', error)
+      initialUser = null
+    }
+  }
+
+  const [currentUser, setCurrentUser] = useState(initialUser)
 
   const currentSection = searchParams.get('section') || 'profile'
 
   // PROFILE PICTURE
   const [accountProfilePicture, setProfilePicture] = useState(
-    user?.profile_picture || ''
+    initialUser?.profile_picture || ''
   )
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -97,18 +106,29 @@ function MyAccount() {
   const [addressForm, setAddressForm] = useState(EMPTY_ADDRESS)
   const [savingAddress, setSavingAddress] = useState(false)
 
-  if (!user) {
+  // ACCOUNT NOTIFICATIONS
+  const [notifications, setNotifications] = useState([])
+  const [loadingNotifications, setLoadingNotifications] = useState(false)
+  const [notificationError, setNotificationError] = useState('')
+
+  // LOGOUT CONFIRMATION MODAL
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  if (!currentUser) {
     return <Navigate to="/login" replace />
   }
 
   const photoUrl = accountProfilePicture
-    ? `${API_URL}${accountProfilePicture}`
+    ? accountProfilePicture.startsWith('http')
+      ? accountProfilePicture
+      : `${API_URL}${accountProfilePicture}`
     : ''
 
   const getToken = () => localStorage.getItem('token')
 
   // LOGOUT
-  const handleLogout = () => {
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false)
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     window.location.href = '/login'
@@ -118,6 +138,22 @@ function MyAccount() {
   const changeSection = (section) => {
     navigate(`/my-account?section=${section}`)
   }
+
+  // SYNC PROFILE PICTURE FROM USER STATE ON MOUNT
+  useEffect(() => {
+    const latestStored = localStorage.getItem('user')
+    if (latestStored) {
+      try {
+        const parsed = JSON.parse(latestStored)
+        setCurrentUser(parsed)
+        if (parsed?.profile_picture) {
+          setProfilePicture(parsed.profile_picture)
+        }
+      } catch (err) {
+        console.error('Error syncing user:', err)
+      }
+    }
+  }, [])
 
   // PROFILE PICTURE UPLOAD
   const handlePhotoSelection = async (event) => {
@@ -186,10 +222,11 @@ function MyAccount() {
       setProfilePicture(updatedPicture)
 
       const updatedUser = {
-        ...user,
+        ...currentUser,
         profile_picture: updatedPicture,
       }
 
+      setCurrentUser(updatedUser)
       localStorage.setItem('user', JSON.stringify(updatedUser))
 
       setPhotoError(false)
@@ -206,6 +243,78 @@ function MyAccount() {
       event.target.value = ''
     }
   }
+
+  // FETCH NOTIFICATIONS FOR ACCOUNT SECTION
+  const fetchAccountNotifications = async () => {
+    const token = getToken()
+
+    if (!token) {
+      setNotificationError('Please log in again to view notifications.')
+      setNotifications([])
+      return
+    }
+
+    setLoadingNotifications(true)
+    setNotificationError('')
+
+    try {
+      const response = await fetch(`${API_URL}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load notifications.')
+      }
+
+      setNotifications(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Account notifications error:', error)
+      setNotificationError(
+        error.message || 'Unable to load notifications.'
+      )
+    } finally {
+      setLoadingNotifications(false)
+    }
+  }
+
+  const handleNotificationClick = async (notification) => {
+    const token = getToken()
+
+    if (token && Number(notification.is_read) === 0) {
+      try {
+        await fetch(
+          `${API_URL}/api/notifications/${notification.notification_id}/read`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+        setNotifications((prev) =>
+          prev.map((item) =>
+            item.notification_id === notification.notification_id
+              ? { ...item, is_read: 1 }
+              : item
+          )
+        )
+      } catch (error) {
+        console.error('Mark notification read error:', error)
+      }
+    }
+
+    navigate('/orders')
+  }
+
+  useEffect(() => {
+    if (currentSection === 'notifications') {
+      fetchAccountNotifications()
+    }
+  }, [currentSection])
 
   // FETCH SAVED ADDRESSES
   const fetchAddresses = async () => {
@@ -272,8 +381,8 @@ function MyAccount() {
 
     setAddressForm({
       ...EMPTY_ADDRESS,
-      recipient_name: user.full_name || '',
-      contact_number: user.contact_number || '',
+      recipient_name: currentUser.full_name || '',
+      contact_number: currentUser.contact_number || '',
       is_default: addresses.length === 0,
     })
 
@@ -488,14 +597,14 @@ function MyAccount() {
       {photoUrl ? (
         <img
           src={photoUrl}
-          alt={`${user.full_name}'s profile`}
+          alt={`${currentUser.full_name}'s profile`}
           onError={(event) => {
             event.currentTarget.style.display = 'none'
           }}
         />
       ) : (
         <span>
-          {user.full_name?.charAt(0)?.toUpperCase() || '👤'}
+          {currentUser.full_name?.charAt(0)?.toUpperCase() || '👤'}
         </span>
       )}
     </div>
@@ -517,7 +626,7 @@ function MyAccount() {
     },
     {
       id: 'notifications',
-      icon: UserRound,
+      icon: Bell,
       title: 'Notifications',
       description: 'Order updates and alerts',
     },
@@ -589,9 +698,9 @@ function MyAccount() {
 
                 <div className="account-welcome-text">
                   <span className="account-greeting">Welcome back!</span>
-                  <h1>{user.full_name}</h1>
+                  <h1>{currentUser.full_name}</h1>
                   <span className="account-role">
-                    {user.role === 'admin'
+                    {currentUser.role === 'admin'
                       ? 'Administrator Account'
                       : 'Consumer Account'}
                   </span>
@@ -709,7 +818,7 @@ function MyAccount() {
                 <button
                   type="button"
                   className="account-management-item account-logout-item"
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutModal(true)}
                 >
                   <span className="account-management-icon">
                     <LogOut size={21} />
@@ -790,28 +899,28 @@ function MyAccount() {
             <div className="account-information-list">
               <div>
                 <span>Full Name</span>
-                <strong>{user.full_name || 'Not provided'}</strong>
+                <strong>{currentUser.full_name || 'Not provided'}</strong>
               </div>
 
               <div>
                 <span>Email Address</span>
-                <strong>{user.email || 'Not provided'}</strong>
+                <strong>{currentUser.email || 'Not provided'}</strong>
               </div>
 
               <div>
                 <span>Contact Number</span>
-                <strong>{user.contact_number || 'Not provided'}</strong>
+                <strong>{currentUser.contact_number || 'Not provided'}</strong>
               </div>
 
               <div>
                 <span>Address</span>
-                <strong>{user.address || 'Not provided'}</strong>
+                <strong>{currentUser.address || 'Not provided'}</strong>
               </div>
 
               <div>
                 <span>Account Type</span>
                 <strong>
-                  {user.role === 'admin' ? 'Administrator' : 'Consumer'}
+                  {currentUser.role === 'admin' ? 'Administrator' : 'Consumer'}
                 </strong>
               </div>
             </div>
@@ -1251,13 +1360,75 @@ function MyAccount() {
               </div>
             </div>
 
-            <div className="account-empty-state">
-              <Bell size={35} />
-              <h3>No Notifications Yet</h3>
-              <p>
-                Order confirmations and delivery updates will appear here.
-              </p>
-            </div>
+            {loadingNotifications && (
+              <div className="account-empty-state">
+                <LoaderCircle size={30} className="address-spinner" />
+                <p>Loading your notifications...</p>
+              </div>
+            )}
+
+            {!loadingNotifications && notificationError && (
+              <div className="account-empty-state">
+                <Bell size={35} />
+                <h3>Unable to Load Notifications</h3>
+                <p>{notificationError}</p>
+                <button
+                  type="button"
+                  className="address-save-button"
+                  onClick={fetchAccountNotifications}
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {!loadingNotifications &&
+              !notificationError &&
+              notifications.length === 0 && (
+                <div className="account-empty-state">
+                  <Bell size={35} />
+                  <h3>No Notifications Yet</h3>
+                  <p>
+                    Order confirmations and delivery updates will appear here.
+                  </p>
+                </div>
+              )}
+
+            {!loadingNotifications &&
+              !notificationError &&
+              notifications.length > 0 && (
+                <div className="account-notifications-list">
+                  {notifications.map((notification) => {
+                    const isUnread = Number(notification.is_read) === 0
+                    return (
+                      <button
+                        type="button"
+                        key={notification.notification_id}
+                        className={`account-notification-item ${
+                          isUnread ? 'unread' : ''
+                        }`}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <div>
+                          <strong>{notification.title}</strong>
+                          <p>{notification.message}</p>
+                          <span>
+                            {new Date(
+                              notification.created_at
+                            ).toLocaleString('en-PH', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
           </section>
         )}
 
@@ -1340,6 +1511,40 @@ function MyAccount() {
           )}
 
       </div>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div
+          className="logout-modal-backdrop"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          <div
+            className="logout-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Log out of your account?</h3>
+            <p>Are you sure you want to log out of Ani-Malay?</p>
+
+            <div className="logout-modal-actions">
+              <button
+                type="button"
+                className="logout-cancel-btn"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="logout-confirm-btn"
+                onClick={handleConfirmLogout}
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MOBILE BOTTOM NAVIGATION */}
       <nav className="account-bottom-nav">

@@ -68,6 +68,8 @@ import './ToastNotification.css'
 import './pages/NotificationBell.css'
 import './App.css'
 
+const API_URL = 'https://ani-malay-production.up.railway.app'
+
 function AppContent() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -115,6 +117,20 @@ function AppContent() {
   }
 
   // =====================================
+  // SESSION CLEANUP ON 401
+  // =====================================
+
+  const clearInvalidSession = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setCartCount(0)
+    setMessageUnreadCount(0)
+    setNotifications([])
+    setUnreadCount(0)
+    setShowNotifications(false)
+  }
+
+  // =====================================
   // CONNECTION STATUS
   // =====================================
 
@@ -142,7 +158,7 @@ function AppContent() {
     }, 2500)
 
     try {
-      const response = await fetch('https://ani-malay-production.up.railway.app/', {
+      const response = await fetch(`${API_URL}/`, {
         method: 'GET',
         cache: 'no-store',
         signal: controller.signal,
@@ -285,7 +301,7 @@ function AppContent() {
       }
 
       const response = await fetch(
-        `https://ani-malay-production.up.railway.app/api/cart/${currentUser.user_id}`,
+        `${API_URL}/api/cart/${currentUser.user_id}`,
         {
           method: 'GET',
           headers: {
@@ -293,6 +309,11 @@ function AppContent() {
           },
         }
       )
+
+      if (response.status === 401) {
+        clearInvalidSession()
+        return
+      }
 
       if (!response.ok) {
         setCartCount(0)
@@ -363,13 +384,18 @@ function AppContent() {
       }
 
       const response = await fetch(
-        'https://ani-malay-production.up.railway.app/api/messages/unread-count',
+        `${API_URL}/api/messages/unread-count`,
         {
           headers: {
             Authorization: `Bearer ${savedToken}`,
           },
         }
       )
+
+      if (response.status === 401) {
+        clearInvalidSession()
+        return
+      }
 
       if (!response.ok) return
 
@@ -455,11 +481,19 @@ function AppContent() {
       }
 
       const [notificationsResponse, countResponse] = await Promise.all([
-        fetch('https://ani-malay-production.up.railway.app/api/notifications', { headers }),
-        fetch('https://ani-malay-production.up.railway.app/api/notifications/unread-count', {
+        fetch(`${API_URL}/api/notifications`, { headers }),
+        fetch(`${API_URL}/api/notifications/unread-count`, {
           headers,
         }),
       ])
+
+      if (
+        notificationsResponse.status === 401 ||
+        countResponse.status === 401
+      ) {
+        clearInvalidSession()
+        return
+      }
 
       if (!notificationsResponse.ok || !countResponse.ok) return
 
@@ -497,7 +531,7 @@ function AppContent() {
 
     try {
       const response = await fetch(
-        `https://ani-malay-production.up.railway.app/api/notifications/${notificationId}/read`,
+        `${API_URL}/api/notifications/${notificationId}/read`,
         {
           method: 'PUT',
           headers: {
@@ -505,6 +539,11 @@ function AppContent() {
           },
         }
       )
+
+      if (response.status === 401) {
+        clearInvalidSession()
+        return
+      }
 
       if (response.ok) {
         await fetchNotifications()
@@ -520,7 +559,7 @@ function AppContent() {
 
     try {
       const response = await fetch(
-        'https://ani-malay-production.up.railway.app/api/notifications/read-all',
+        `${API_URL}/api/notifications/read-all`,
         {
           method: 'PUT',
           headers: {
@@ -528,6 +567,11 @@ function AppContent() {
           },
         }
       )
+
+      if (response.status === 401) {
+        clearInvalidSession()
+        return
+      }
 
       if (response.ok) {
         await fetchNotifications()
@@ -694,15 +738,7 @@ function AppContent() {
   // =====================================
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-
-    setCartCount(0)
-    setMessageUnreadCount(0)
-    setNotifications([])
-    setUnreadCount(0)
-    setShowNotifications(false)
-
+    clearInvalidSession()
     window.location.href = '/login'
   }
 

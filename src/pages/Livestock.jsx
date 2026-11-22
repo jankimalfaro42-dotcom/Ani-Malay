@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 import '../App.css'
 import './Livestock.css'
-
+import {notify} from '../utils/notify'
 function Livestock() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
@@ -44,7 +44,7 @@ function Livestock() {
     const savedUser = localStorage.getItem('user')
 
     if (!savedUser) {
-      alert('Please login first before adding products to your cart.')
+      notify('warning', 'Login Required', 'Please log in first.')
       navigate('/login')
       return
     }
@@ -55,19 +55,19 @@ function Livestock() {
       user = JSON.parse(savedUser)
     } catch (error) {
       console.error('User data error:', error)
-      alert('Please login again.')
+      notify('warning', 'Session Expired', 'Please log in again.')
       navigate('/login')
       return
     }
 
     if (!user.user_id) {
-      alert('User information is missing. Please login again.')
+      notify('warning', 'Login Required', 'Please log in again.')
       navigate('/login')
       return
     }
 
     if (Number(product.stock_quantity) <= 0) {
-      alert('This product is out of stock.')
+      notify('warning', 'Out of Stock', 'This product is currently out of stock.')
       return
     }
 
@@ -90,10 +90,10 @@ function Livestock() {
         throw new Error(data.message || 'Failed to add product to cart')
       }
 
-      alert('Product added to cart successfully!')
+      notify('success', 'Product Added', `${product.name} successfully added to cart!`)
     } catch (error) {
       console.error('Add to cart error:', error)
-      alert(error.message || 'Failed to add product to cart.')
+      notify('error', 'Failed to Add Product', error.message || 'Failed to add product to cart.')
     }
   }
 

@@ -103,6 +103,7 @@ const authenticateUser = async (req, res, requiredRole) => {
           email,
           contact_number,
           address,
+          profile_picture,
           password,
           role,
           status
@@ -119,6 +120,7 @@ const authenticateUser = async (req, res, requiredRole) => {
           email,
           contact_number,
           address,
+          profile_picture,
           password,
           role,
           status
@@ -187,6 +189,7 @@ const authenticateUser = async (req, res, requiredRole) => {
         email: user.email,
         contact_number: user.contact_number,
         address: user.address,
+        profile_picture: user.profile_picture || '',
         role: user.role,
         status: user.status,
       },
@@ -205,15 +208,41 @@ const authenticateUser = async (req, res, requiredRole) => {
 // GET /api/users/me
 // =====================================
 
-router.get('/me', authMiddleware, (req, res) => {
-  res.json({
-    user: {
-      user_id: req.user.user_id,
-      email: req.user.email,
-      role: req.user.role,
-      status: req.user.status,
-    },
-  })
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      `
+        SELECT
+          user_id,
+          full_name,
+          email,
+          contact_number,
+          address,
+          profile_picture,
+          role,
+          status
+        FROM users
+        WHERE user_id = ?
+        LIMIT 1
+      `,
+      [req.user.user_id]
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: 'User not found',
+      })
+    }
+
+    return res.json({
+      user: rows[0],
+    })
+  } catch (error) {
+    console.error('Get current user error:', error)
+    return res.status(500).json({
+      message: 'Failed to load user profile',
+    })
+  }
 })
 
 // =====================================
@@ -248,6 +277,7 @@ router.get('/', (req, res) => {
       email,
       contact_number,
       address,
+      profile_picture,
       role,
       status,
       created_at
@@ -274,16 +304,16 @@ router.get('/', (req, res) => {
   }
 
   if (role) {
-    sql += ` AND role = ?`
+    sql +=  `AND role = ?`
     values.push(role)
   }
 
   if (status) {
-    sql += ` AND status = ?`
+    sql +=  `AND status = ?`
     values.push(status)
   }
 
-  sql += ` ORDER BY user_id DESC`
+  sql +=  `ORDER BY user_id DESC`
 
   db.query(sql, values, (err, results) => {
     if (err) {
@@ -501,7 +531,7 @@ router.put('/:id/status', (req, res) => {
     }
 
     res.json({
-    message: `User ${status} successfully`,
+      message: `User ${status} successfully`,
     })
   })
 })
@@ -685,7 +715,6 @@ router.post(
       return res.json({
         message: 'Admin password changed successfully.',
       })
-
     } catch (error) {
       console.error('Admin change password error:', error)
 
@@ -762,14 +791,13 @@ router.post('/forgot-password', async (req, res) => {
       [user.user_id, verificationTarget, otpCode]
     )
 
-    // TODO: Ikonekta rito ang actual email (Nodemailer) o SMS gateway kung handa na
     return res.json({
       message: 'A 6-digit verification code has been generated.',
       user_id: user.user_id,
       verification_id: insertResult.insertId,
       target: verificationTarget,
       expires_in_minutes: 10,
-      ...(process.env.NODE_ENV !== 'production' ? { dev_otp: otpCode } : { dev_otp: otpCode }),
+      dev_otp: otpCode,
     })
   } catch (error) {
     console.error('Forgot password error:', error)

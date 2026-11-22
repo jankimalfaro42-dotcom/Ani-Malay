@@ -24,8 +24,7 @@ async function parseApiResponse(response, fallbackErrorMessage) {
     return rawText ? JSON.parse(rawText) : {}
   } catch {
     console.error(
-      `Non-JSON response from ${response.url} (status ${response.status}):`,
-      rawText.slice(0, 300)
+      `Non-JSON response from ${response.url} (status ${response.status}): ${rawText.slice(0, 300)}`
     )
 
     throw new Error(
@@ -320,6 +319,7 @@ function Checkout() {
             },
 
             body: JSON.stringify({
+              full_name: fullName.trim(),
               payment_method: 'COD',
               delivery_area: deliveryArea,
               delivery_address: address.trim(),
@@ -829,7 +829,7 @@ function Checkout() {
             <span>Product Subtotal</span>
 
             <strong>
-              ₱{subtotal.toFixed(2)}
+              `₱${subtotal.toFixed(2)}`
             </strong>
           </div>
 
@@ -849,7 +849,7 @@ function Checkout() {
             <span>Total Order Amount</span>
 
             <strong>
-              ₱{total.toFixed(2)}
+              `₱${total.toFixed(2)}`
             </strong>
           </div>
 
@@ -895,4 +895,3 @@ function Checkout() {
 }
 
 export default Checkout
-
