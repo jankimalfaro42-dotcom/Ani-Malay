@@ -57,9 +57,6 @@ function Checkout() {
   const [notes, setNotes] = useState('')
 
   const [referenceNumber, setReferenceNumber] = useState('')
-  const [receiptImage, setReceiptImage] = useState(null)
-
-  const [pendingOrderId, setPendingOrderId] = useState(null)
 
   const [gcashInfo, setGcashInfo] = useState(() => {
     const saved = getLocalGcashConfig()
@@ -231,12 +228,10 @@ function Checkout() {
   const handleDeliveryAreaChange = (e) => {
     setDeliveryArea(e.target.value)
     setReferenceNumber('')
-    setReceiptImage(null)
-    setPendingOrderId(null)
   }
 
   // ==========================================
-  // PLACE ORDER AND SUBMIT SHIPPING PAYMENT INFO
+  // PLACE ORDER DIRECTLY ONCE REFERENCE NUMBER IS ENTERED
   // ==========================================
 
   const handleSubmit = async (e) => {
@@ -291,7 +286,16 @@ function Checkout() {
       return
     }
 
-    if (cartItems.length === 0 && !pendingOrderId) {
+    if (requiresAdvancePayment && !referenceNumber.trim()) {
+      notify(
+        'warning',
+        'Reference Number Required',
+        'Please enter your GCash reference number so you can place your order.'
+      )
+      return
+    }
+
+    if (cartItems.length === 0) {
       notify(
         'warning',
         'Empty Cart',
@@ -306,186 +310,113 @@ function Checkout() {
     // VALIDATE QUANTITY OPTIONS
     // ========================================
 
-    if (!pendingOrderId) {
-      const invalidItem = cartItems.find(
-        item =>
-          !Number.isInteger(Number(item.quantity_option_id)) ||
-          Number(item.quantity_option_id) <= 0
+    const invalidItem = cartItems.find(
+      item =>
+        !Number.isInteger(Number(item.quantity_option_id)) ||
+        Number(item.quantity_option_id) <= 0
+    )
+
+    if (invalidItem) {
+      notify(
+        'error',
+        'Quantity Option Missing',
+        `Please remove and add ${invalidItem.product_name} to your cart again so its quantity option can be loaded.`
       )
-
-      if (invalidItem) {
-        notify(
-          'error',
-          'Quantity Option Missing',
-          `Please remove and add ${invalidItem.product_name} to your cart again so its quantity option can be loaded.`
-        )
-        return
-      }
-    }
-
-    // ========================================
-    // OPTIONAL RECEIPT FILE VALIDATION ONLY IF UPLOADED
-    // ========================================
-
-    if (requiresAdvancePayment && receiptImage) {
-      if (receiptImage.size > 5 * 1024 * 1024) {
-        notify(
-          'warning',
-          'File Too Large',
-          'Your receipt image must not exceed 5 MB.'
-        )
-        return
-      }
-
-      if (
-        ![
-          'image/jpeg',
-          'image/png',
-          'image/webp',
-        ].includes(receiptImage.type)
-      ) {
-        notify(
-          'warning',
-          'Invalid Image',
-          'Please upload a JPG, PNG, or WEBP image.'
-        )
-        return
-      }
+      return
     }
 
     setIsSubmitting(true)
 
     try {
-      let orderId = pendingOrderId
+      const cleanRef = referenceNumber.trim() || null
 
-      // ======================================
-      // STEP 1: CREATE ORDER
-      // ======================================
+      const orderItems = cartItems.map(item => ({
+        product_id: Number(item.product_id),
+        quantity_option_id: Number(item.quantity_option_id),
+        quantity: Number(item.quantity),
+      }))
+
+      const orderResponse = await fetch(
+        `${API_URL}/api/orders`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify({
+            full_name: fullName.trim(),
+            payment_method: 'COD',
+            delivery_area: deliveryArea,
+            delivery_address: address.trim(),
+            contact_number: contactNumber.trim(),
+            notes: notes.trim(),
+            gcash_reference_number: cleanRef,
+            reference_number: cleanRef,
+            items: orderItems,
+          }),
+        }
+      )
+
+      const orderData = await parseApiResponse(
+        orderResponse,
+        'Failed to place your order.'
+      )
+
+      if (!orderResponse.ok) {
+        throw new Error(
+          orderData.message || 'Failed to place your order.'
+        )
+      }
+
+      const orderId = orderData.order_id
 
       if (!orderId) {
-        const orderItems = cartItems.map(item => ({
-          product_id: Number(item.product_id),
-          quantity_option_id: Number(item.quantity_option_id),
-          quantity: Number(item.quantity),
-        }))
-
-        const orderResponse = await fetch(
-          `${API_URL}/api/orders`,
-          {
-            method: 'POST',
-
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-
-            body: JSON.stringify({
-              full_name: fullName.trim(),
-              payment_method: 'COD',
-              delivery_area: deliveryArea,
-              delivery_address: address.trim(),
-              contact_number: contactNumber.trim(),
-              notes: notes.trim(),
-              gcash_reference_number: referenceNumber.trim() || null,
-              items: orderItems,
-            }),
-          }
+        throw new Error(
+          'The server did not return an order ID.'
         )
-
-        const orderData = await parseApiResponse(
-          orderResponse,
-          'Failed to place your order.'
-        )
-
-        if (!orderResponse.ok) {
-          throw new Error(
-            orderData.message || 'Failed to place your order.'
-          )
-        }
-
-        orderId = orderData.order_id
-        setPendingOrderId(orderId)
-
-        if (!orderId) {
-          throw new Error(
-            'The server did not return an order ID.'
-          )
-        }
       }
 
-      // ======================================
-      // STEP 2: SUBMIT SHIPPING PAYMENT DETAILS IF PROVIDED
-      // ======================================
-
-      if (
-        requiresAdvancePayment &&
-        (referenceNumber.trim() || receiptImage)
-      ) {
-        const formData = new FormData()
-
-        if (referenceNumber.trim()) {
-          formData.append(
-            'reference_number',
-            referenceNumber.trim()
+      // Optional: save shipping reference if your backend still expects /receipt
+      if (requiresAdvancePayment && cleanRef) {
+        try {
+          await fetch(
+            `${API_URL}/api/payments/shipping/${orderId}/receipt`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                reference_number: cleanRef,
+              }),
+            }
           )
-        }
-
-        if (receiptImage) {
-          formData.append(
-            'receipt_image',
-            receiptImage
-          )
-        }
-
-        const receiptResponse = await fetch(
-          `${API_URL}/api/payments/shipping/${orderId}/receipt`,
-          {
-            method: 'POST',
-
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-
-            body: formData,
-          }
-        )
-
-        const receiptData = await parseApiResponse(
-          receiptResponse,
-          'Order created, but shipping payment details submission failed.'
-        )
-
-        if (!receiptResponse.ok) {
-          throw new Error(
-            receiptData.message ||
-              'Order created, but shipping payment details submission failed. Please try again.'
-          )
+        } catch (receiptErr) {
+          console.warn('Shipping receipt route warning:', receiptErr)
         }
       }
-
-      // ======================================
-      // STEP 3: SUCCESS
-      // ======================================
-
-      setPendingOrderId(null)
 
       notify(
         'success',
-        'Order Submitted Successfully!',
-        `Your order #${orderId} has been submitted.`
+        'Order Placed Successfully!',
+        `Your order #${orderId} has been placed.`
       )
 
       if (requiresAdvancePayment) {
         notify(
           'info',
           'Advance Shipping Fee Verification',
-          'Your order will be processed once you have paid the shipping fee through the GCash number/QR provided and once the admin verifies your advance payment.'
+          'Your order has been placed with your GCash reference number and will be processed once the admin verifies your advance shipping payment.'
         )
       }
 
       setTimeout(() => {
         navigate('/orders')
-      }, 1800)
+      }, 1500)
 
     } catch (error) {
       console.error('Checkout error:', error)
@@ -518,7 +449,7 @@ function Checkout() {
   // EMPTY CART
   // ==========================================
 
-  if (cartItems.length === 0 && !pendingOrderId) {
+  if (cartItems.length === 0) {
     return (
       <section className="checkout-page">
         <div className="checkout-empty">
@@ -677,10 +608,8 @@ function Checkout() {
                     <strong>
                       ₱{deliveryFee.toFixed(2)}
                     </strong>{' '}
-                    through GCash. Your order will be processed
-                    once you have paid the shipping fee through
-                    the GCash details provided below and once
-                    the admin verifies your advance payment.
+                    through GCash. Enter your GCash reference
+                    number below to place your order.
                   </p>
 
                   <div className="gcash-lgu-details">
@@ -792,10 +721,8 @@ function Checkout() {
                   Pay exactly <strong>₱{deliveryFee.toFixed(2)}</strong>{' '}
                   via GCash to <strong>{gcashInfo.accountName}</strong>{' '}
                   (<strong>{gcashInfo.accountNumber}</strong>) or scan
-                  the QR code above. You can still place your order,
-                  and it will be processed once you have paid the
-                  shipping fee and the admin verifies your advance
-                  payment.
+                  the QR code above, then enter your GCash reference
+                  number below to place your order.
                 </p>
 
                 <div className="checkout-form-group">
@@ -807,35 +734,9 @@ function Checkout() {
                     onChange={(e) =>
                       setReferenceNumber(e.target.value)
                     }
-                    placeholder="Enter GCash reference number (or leave blank if paying shortly)"
+                    placeholder="Enter GCash reference number"
+                    required={requiresAdvancePayment}
                   />
-                </div>
-
-                <div className="checkout-form-group">
-                  <label>Upload GCash Receipt (Optional)</label>
-
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) =>
-                      setReceiptImage(
-                        e.target.files?.[0] || null
-                      )
-                    }
-                  />
-
-                  <small>
-                    Optional — picture is not required if you only
-                    enter a reference number or submit later.
-                    Accepted formats: JPG, PNG, WEBP. Max: 5 MB.
-                  </small>
-
-                  {receiptImage && (
-                    <p>
-                      Selected file:{' '}
-                      <strong>{receiptImage.name}</strong>
-                    </p>
-                  )}
                 </div>
               </div>
             )}
@@ -845,11 +746,11 @@ function Checkout() {
                 <strong>Important Payment Reminder</strong>
 
                 <p>
-                  Your order will be processed once you have paid
-                  the shipping fee through the GCash number/QR
-                  provided and once the admin verifies your
-                  advance payment. Only the shipping fee is paid
-                  in advance through GCash; payment for your
+                  Once you enter your GCash reference number and
+                  place your order, your order will be processed
+                  after the admin verifies your advance shipping
+                  payment. Only the shipping fee is paid in
+                  advance through GCash; payment for your
                   agricultural products will be collected upon
                   delivery (COD).
                 </p>
@@ -949,23 +850,12 @@ function Checkout() {
               : ''}
           </p>
 
-          {pendingOrderId && (
-            <p>
-              Order #{pendingOrderId} was created.
-              You can complete or retry your shipping payment details.
-            </p>
-          )}
-
           <button
             type="submit"
             className="place-order-btn"
             disabled={isSubmitting}
           >
-            {isSubmitting
-              ? 'Processing...'
-              : pendingOrderId
-                ? 'Submit Shipping Payment'
-                : 'Place Order'}
+            {isSubmitting ? 'Placing Order...' : 'Place Order'}
           </button>
 
           <button

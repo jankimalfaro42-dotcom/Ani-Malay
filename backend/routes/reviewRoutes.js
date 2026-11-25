@@ -1,8 +1,94 @@
-
 const express = require('express')
 const router = express.Router()
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 const db = require('../db')
 const authMiddleware = require('../middleware/authMiddleware')
+
+// ===============================
+// MULTER CONFIG FOR REVIEW IMAGES
+// Up to 3 images, JPG/PNG/WEBP, max 5MB each
+// ===============================
+const reviewUploadDir = path.join(process.cwd(), 'uploads', 'reviews')
+fs.mkdirSync(reviewUploadDir, { recursive: true })
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, reviewUploadDir)
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase()
+    const uniqueName = `review-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`
+    cb(null, uniqueName)
+  },
+})
+
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true)
+  } else {
+    cb(new Error('Only JPG, PNG, and WEBP images are allowed.'))
+  }
+}
+
+const uploadReviewImages = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+}).array('images', 3)
+
+function cleanupUploadedFiles(files = []) {
+  files.forEach((file) => {
+    if (file?.path) {
+      fs.unlink(file.path, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error('Failed to clean up uploaded file:', unlinkErr)
+        }
+      })
+    }
+  })
+}
+
+function attachImagesToReviews(rows, callback) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return callback(null, [])
+  }
+
+  const reviewIds = rows.map((row) => row.review_id)
+  const placeholders = reviewIds.map(() => '?').join(', ')
+
+  const imageSql = `
+    SELECT review_id, image_url
+    FROM review_images
+    WHERE review_id IN (${placeholders})
+    ORDER BY image_id ASC
+  `
+
+  db.query(imageSql, reviewIds, (err, imageRows) => {
+    if (err) {
+      return callback(err)
+    }
+
+    const imagesByReviewId = {}
+    imageRows.forEach((img) => {
+      if (!imagesByReviewId[img.review_id]) {
+        imagesByReviewId[img.review_id] = []
+      }
+      imagesByReviewId[img.review_id].push(img.image_url)
+    })
+
+    const formatted = rows.map((row) => ({
+      ...row,
+      images: imagesByReviewId[row.review_id] || [],
+    }))
+
+    callback(null, formatted)
+  })
+}
 
 // ===============================
 // GET MY REVIEWS
@@ -50,7 +136,16 @@ router.get('/mine', authMiddleware, (req, res) => {
       })
     }
 
-    res.json(results)
+    attachImagesToReviews(results, (imgErr, formattedResults) => {
+      if (imgErr) {
+        console.error('❌ Error fetching review images:', imgErr)
+        return res.status(500).json({
+          message: 'Failed to fetch review images.',
+        })
+      }
+
+      res.json(formattedResults)
+    })
   })
 })
 
@@ -88,21 +183,21 @@ router.get('/', (req, res) => {
   const values = []
 
   if (product_id) {
-    sql += ` AND r.product_id = ?`
+    sql +=  `AND r.product_id = ?`
     values.push(product_id)
   }
 
   if (user_id) {
-    sql += ` AND r.user_id = ?`
+    sql +=  `AND r.user_id = ?`
     values.push(user_id)
   }
 
   if (status) {
-    sql += ` AND r.status = ?`
+    sql +=  `AND r.status = ?`
     values.push(status)
   }
 
-  sql += ` ORDER BY r.review_id DESC`
+  sql +=  `ORDER BY r.review_id DESC`
 
   db.query(sql, values, (err, results) => {
     if (err) {
@@ -113,7 +208,16 @@ router.get('/', (req, res) => {
       })
     }
 
-    res.json(results)
+    attachImagesToReviews(results, (imgErr, formattedResults) => {
+      if (imgErr) {
+        console.error('❌ Error fetching review images:', imgErr)
+        return res.status(500).json({
+          message: 'Failed to fetch review images',
+        })
+      }
+
+      res.json(formattedResults)
+    })
   })
 })
 
@@ -162,13 +266,23 @@ router.get('/:id', (req, res) => {
       })
     }
 
-    res.json(results[0])
+    attachImagesToReviews(results, (imgErr, formattedResults) => {
+      if (imgErr) {
+        console.error('❌ Error fetching review images:', imgErr)
+        return res.status(500).json({
+          message: 'Failed to fetch review images',
+        })
+      }
+
+      res.json(formattedResults[0])
+    })
   })
 })
 
 // ===============================
 // CREATE REVIEW
 // Uses the logged-in user's ID from JWT
+// Accepts optional multipart images under field name "images"
 // ===============================
 router.post('/', authMiddleware, (req, res) => {
   if (req.user.role !== 'consumer') {
@@ -177,61 +291,117 @@ router.post('/', authMiddleware, (req, res) => {
     })
   }
 
-  const {
-    product_id,
-    rating,
-    comment,
-  } = req.body
+  uploadReviewImages(req, res, (uploadErr) => {
+    const uploadedFiles = req.files || []
 
-  const numericRating = Number(rating)
+    if (uploadErr) {
+      cleanupUploadedFiles(uploadedFiles)
 
-  if (!product_id || rating === undefined || rating === null || rating === '') {
-    return res.status(400).json({
-      message: 'Product ID and rating are required.',
-    })
-  }
+      if (uploadErr.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          message: 'Each image must be 5 MB or smaller.',
+        })
+      }
 
-  if (
-    !Number.isInteger(numericRating) ||
-    numericRating < 1 ||
-    numericRating > 5
-  ) {
-    return res.status(400).json({
-      message: 'Rating must be a whole number between 1 and 5.',
-    })
-  }
+      if (uploadErr.code === 'LIMIT_UNEXPECTED_FILE' || uploadErr.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+          message: 'You can upload up to 3 images per review.',
+        })
+      }
 
-  const sql = `
-    INSERT INTO reviews
-    (
-      user_id,
-      product_id,
-      rating,
-      comment,
-      status
-    )
-    VALUES (?, ?, ?, ?, 'pending')
-  `
-
-  const values = [
-    req.user.user_id,
-    product_id,
-    numericRating,
-    comment || null,
-  ]
-
-  db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error('❌ Error adding review:', err)
-
-      return res.status(500).json({
-        message: 'Failed to add review',
+      return res.status(400).json({
+        message: uploadErr.message || 'Image upload failed.',
       })
     }
 
-    res.status(201).json({
-      message: 'Review submitted successfully',
-      review_id: result.insertId,
+    const {
+      product_id,
+      rating,
+      comment,
+    } = req.body
+
+    const numericRating = Number(rating)
+
+    if (!product_id || rating === undefined || rating === null || rating === '') {
+      cleanupUploadedFiles(uploadedFiles)
+      return res.status(400).json({
+        message: 'Product ID and rating are required.',
+      })
+    }
+
+    if (
+      !Number.isInteger(numericRating) ||
+      numericRating < 1 ||
+      numericRating > 5
+    ) {
+      cleanupUploadedFiles(uploadedFiles)
+      return res.status(400).json({
+        message: 'Rating must be a whole number between 1 and 5.',
+      })
+    }
+
+    const sql = `
+      INSERT INTO reviews
+      (
+        user_id,
+        product_id,
+        rating,
+        comment,
+        status
+      )
+      VALUES (?, ?, ?, ?, 'pending')
+    `
+
+    const values = [
+      req.user.user_id,
+      product_id,
+      numericRating,
+      comment || null,
+    ]
+
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('❌ Error adding review:', err)
+        cleanupUploadedFiles(uploadedFiles)
+
+        return res.status(500).json({
+          message: 'Failed to add review',
+        })
+      }
+
+      const reviewId = result.insertId
+      const imageUrls = uploadedFiles.map((file) => `/uploads/reviews/${file.filename}`)
+
+      if (imageUrls.length === 0) {
+        return res.status(201).json({
+          message: 'Review submitted successfully',
+          review_id: reviewId,
+          images: [],
+        })
+      }
+
+      const insertImagesSql = `
+        INSERT INTO review_images (review_id, image_url)
+        VALUES ?
+      `
+      const imageRows = imageUrls.map((url) => [reviewId, url])
+
+      db.query(insertImagesSql, [imageRows], (imgErr) => {
+        if (imgErr) {
+          console.error('❌ Error saving review images:', imgErr)
+          cleanupUploadedFiles(uploadedFiles)
+
+          return res.status(500).json({
+            message: 'Review saved, but failed to save uploaded images.',
+          })
+        }
+
+        return res.status(201).json({
+          message: 'Review submitted successfully',
+          review_id: reviewId,
+          images: imageUrls,
+        })
+      })
     })
   })
 })
@@ -362,7 +532,7 @@ router.delete('/:id', authMiddleware, (req, res) => {
   const values = [id]
 
   if (req.user.role === 'consumer') {
-    sql += ` AND user_id = ?`
+    sql +=  `AND user_id = ?`
     values.push(req.user.user_id)
   } else if (req.user.role !== 'admin') {
     return res.status(403).json({

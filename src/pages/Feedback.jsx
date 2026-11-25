@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react'
 import {
   MessageSquare,
@@ -151,8 +150,12 @@ function Feedback() {
   }, [])
 
   useEffect(() => {
-    fetchProducts()
-    fetchReviews()
+    const timeoutId = window.setTimeout(() => {
+      fetchProducts()
+      fetchReviews()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [fetchProducts, fetchReviews])
 
   // ===============================
@@ -274,14 +277,6 @@ function Feedback() {
       return
     }
 
-    if (images.length > 0) {
-      setNoticeType('error')
-      setNotice(
-        'Product image uploads are not connected yet. Remove the pictures to submit your text review.'
-      )
-      return
-    }
-
     setSubmitting(true)
 
     try {
@@ -309,6 +304,8 @@ function Feedback() {
         'Review submitted successfully! It is now pending Admin approval.'
       )
 
+      releaseImagePreviews(images)
+      setImages([])
       setProduct('')
       setRating(0)
       setComment('')
@@ -740,7 +737,6 @@ function Feedback() {
                 <label>Attach Pictures (Optional)</label>
                 <p className="feedback-upload-help">
                   Up to 3 images, JPG/PNG/WEBP, maximum 5 MB each.
-                  Product image uploads are not connected yet.
                 </p>
 
                 <label className="feedback-upload-box">

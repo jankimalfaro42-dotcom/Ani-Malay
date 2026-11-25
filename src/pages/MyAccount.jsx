@@ -4,7 +4,7 @@ import {
   Navigate,
 } from 'react-router-dom'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   UserRound,
@@ -66,6 +66,24 @@ const EMPTY_ADDRESS = {
   is_default: false,
 }
 
+function ProfileAvatar({ fullName, photoUrl, large = false, onError }) {
+  return (
+    <div className={`account-avatar ${large ? 'large' : ''}`}>
+      {photoUrl ? (
+        <img
+          src={photoUrl}
+          alt={`${fullName}'s profile`}
+          onError={onError}
+        />
+      ) : (
+        <span>
+          {fullName?.charAt(0)?.toUpperCase() || '👤'}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function MyAccount() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -90,6 +108,7 @@ function MyAccount() {
   const [accountProfilePicture, setProfilePicture] = useState(
     initialUser?.profile_picture || ''
   )
+  const [imgLoadFailed, setImgLoadFailed] = useState(false)
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoMessage, setPhotoMessage] = useState('')
@@ -114,17 +133,144 @@ function MyAccount() {
   // LOGOUT CONFIRMATION MODAL
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
+  const getToken = () => localStorage.getItem('token')
+
+  // SYNC LATEST USER PROFILE FROM BACKEND ON MOUNT
+  useEffect(() => {
+    const syncLatestUser = async () => {
+      const token = getToken()
+      if (!token) return
+
+      try {
+        const response = await fetch(`${API_URL}/api/users/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) return
+
+        const data = await response.json()
+        if (data?.user) {
+          setCurrentUser(data.user)
+          setProfilePicture(data.user.profile_picture || '')
+          setImgLoadFailed(false)
+          localStorage.setItem('user', JSON.stringify(data.user))
+        }
+      } catch (error) {
+        console.error('Failed to sync user profile:', error)
+      }
+    }
+
+    syncLatestUser()
+  }, [])
+
+  // FETCH NOTIFICATIONS FOR ACCOUNT SECTION
+  const fetchAccountNotifications = useCallback(async () => {
+    const token = localStorage.getItem('token')
+
+    if (!token) {
+      setNotificationError('Please log in again to view notifications.')
+      setNotifications([])
+      return
+    }
+
+    setLoadingNotifications(true)
+    setNotificationError('')
+
+    try {
+      const response = await fetch(`${API_URL}/api/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to load notifications.')
+      }
+
+      setNotifications(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Account notifications error:', error)
+      setNotificationError(
+        error.message || 'Unable to load notifications.'
+      )
+    } finally {
+      setLoadingNotifications(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (currentSection === 'notifications') {
+      const timeoutId = window.setTimeout(fetchAccountNotifications, 0)
+      return () => window.clearTimeout(timeoutId)
+    }
+  }, [currentSection, fetchAccountNotifications])
+
+  // FETCH SAVED ADDRESSES
+  const fetchAddresses = useCallback(async () => {
+    const token = localStorage.getItem('token')
+
+    if (!token) {
+      setAddressError(true)
+      setAddressMessage('Please log in again to view your addresses.')
+      return
+    }
+
+    setLoadingAddresses(true)
+    setAddressMessage('')
+    setAddressError(false)
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/users/me/addresses`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to load saved addresses.'
+        )
+      }
+
+      setAddresses(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Fetch addresses error:', error)
+      setAddressError(true)
+      setAddressMessage(
+        error.message || 'Unable to load saved addresses.'
+      )
+    } finally {
+      setLoadingAddresses(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (currentSection === 'addresses') {
+      const timeoutId = window.setTimeout(fetchAddresses, 0)
+      return () => window.clearTimeout(timeoutId)
+    }
+  }, [currentSection, fetchAddresses])
+
   if (!currentUser) {
     return <Navigate to="/login" replace />
   }
 
-  const photoUrl = accountProfilePicture
-    ? accountProfilePicture.startsWith('http')
-      ? accountProfilePicture
-      : `${API_URL}${accountProfilePicture}`
-    : ''
-
-  const getToken = () => localStorage.getItem('token')
+  const photoUrl =
+    accountProfilePicture && !imgLoadFailed
+      ? accountProfilePicture.startsWith('http') ||
+        accountProfilePicture.startsWith('data:')
+        ? accountProfilePicture
+        : `${API_URL}${accountProfilePicture}`
+      : ''
 
   // LOGOUT
   const handleConfirmLogout = () => {
@@ -138,22 +284,6 @@ function MyAccount() {
   const changeSection = (section) => {
     navigate(`/my-account?section=${section}`)
   }
-
-  // SYNC PROFILE PICTURE FROM USER STATE ON MOUNT
-  useEffect(() => {
-    const latestStored = localStorage.getItem('user')
-    if (latestStored) {
-      try {
-        const parsed = JSON.parse(latestStored)
-        setCurrentUser(parsed)
-        if (parsed?.profile_picture) {
-          setProfilePicture(parsed.profile_picture)
-        }
-      } catch (err) {
-        console.error('Error syncing user:', err)
-      }
-    }
-  }, [])
 
   // PROFILE PICTURE UPLOAD
   const handlePhotoSelection = async (event) => {
@@ -220,6 +350,7 @@ function MyAccount() {
       const updatedPicture = data.profile_picture
 
       setProfilePicture(updatedPicture)
+      setImgLoadFailed(false)
 
       const updatedUser = {
         ...currentUser,
@@ -241,43 +372,6 @@ function MyAccount() {
     } finally {
       setUploadingPhoto(false)
       event.target.value = ''
-    }
-  }
-
-  // FETCH NOTIFICATIONS FOR ACCOUNT SECTION
-  const fetchAccountNotifications = async () => {
-    const token = getToken()
-
-    if (!token) {
-      setNotificationError('Please log in again to view notifications.')
-      setNotifications([])
-      return
-    }
-
-    setLoadingNotifications(true)
-    setNotificationError('')
-
-    try {
-      const response = await fetch(`${API_URL}/api/notifications`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to load notifications.')
-      }
-
-      setNotifications(Array.isArray(data) ? data : [])
-    } catch (error) {
-      console.error('Account notifications error:', error)
-      setNotificationError(
-        error.message || 'Unable to load notifications.'
-      )
-    } finally {
-      setLoadingNotifications(false)
     }
   }
 
@@ -309,62 +403,6 @@ function MyAccount() {
 
     navigate('/orders')
   }
-
-  useEffect(() => {
-    if (currentSection === 'notifications') {
-      fetchAccountNotifications()
-    }
-  }, [currentSection])
-
-  // FETCH SAVED ADDRESSES
-  const fetchAddresses = async () => {
-    const token = getToken()
-
-    if (!token) {
-      setAddressError(true)
-      setAddressMessage('Please log in again to view your addresses.')
-      return
-    }
-
-    setLoadingAddresses(true)
-    setAddressMessage('')
-    setAddressError(false)
-
-    try {
-      const response = await fetch(
-        `${API_URL}/api/users/me/addresses`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || 'Failed to load saved addresses.'
-        )
-      }
-
-      setAddresses(Array.isArray(data) ? data : [])
-    } catch (error) {
-      console.error('Fetch addresses error:', error)
-      setAddressError(true)
-      setAddressMessage(
-        error.message || 'Unable to load saved addresses.'
-      )
-    } finally {
-      setLoadingAddresses(false)
-    }
-  }
-
-  useEffect(() => {
-    if (currentSection === 'addresses') {
-      fetchAddresses()
-    }
-  }, [currentSection])
 
   // ADDRESS FORM
   const handleAddressInput = (event) => {
@@ -591,25 +629,6 @@ function MyAccount() {
     }
   }
 
-  // PROFILE AVATAR
-  const ProfileAvatar = ({ large = false }) => (
-    <div className={`account-avatar ${large ? 'large' : ''}`}>
-      {photoUrl ? (
-        <img
-          src={photoUrl}
-          alt={`${currentUser.full_name}'s profile`}
-          onError={(event) => {
-            event.currentTarget.style.display = 'none'
-          }}
-        />
-      ) : (
-        <span>
-          {currentUser.full_name?.charAt(0)?.toUpperCase() || '👤'}
-        </span>
-      )}
-    </div>
-  )
-
   // ACCOUNT MENU
   const accountItems = [
     {
@@ -694,7 +713,12 @@ function MyAccount() {
           <>
             <div className="account-welcome-card">
               <div className="account-welcome-info">
-                <ProfileAvatar large />
+                <ProfileAvatar
+                  fullName={currentUser.full_name}
+                  photoUrl={photoUrl}
+                  large
+                  onError={() => setImgLoadFailed(true)}
+                />
 
                 <div className="account-welcome-text">
                   <span className="account-greeting">Welcome back!</span>
@@ -858,7 +882,12 @@ function MyAccount() {
             </div>
 
             <div className="account-profile-photo">
-              <ProfileAvatar large />
+              <ProfileAvatar
+                fullName={currentUser.full_name}
+                photoUrl={photoUrl}
+                large
+                onError={() => setImgLoadFailed(true)}
+              />
 
               <div>
                 <h3>Profile Picture</h3>
