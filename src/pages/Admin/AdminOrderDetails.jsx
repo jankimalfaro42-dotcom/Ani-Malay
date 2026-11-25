@@ -16,6 +16,7 @@ import { Link, useParams } from 'react-router-dom'
 import './AdminOrderDetails.css'
 
 const API = 'https://ani-malay-production.up.railway.app/api'
+const API_ORIGIN = API.replace(/\/api$/, '')
 
 function AdminOrderDetails() {
   const { id } = useParams()
@@ -33,6 +34,7 @@ function AdminOrderDetails() {
   const [riderMessage, setRiderMessage] = useState('')
   const [riderError, setRiderError] = useState(false)
   const [fetchError, setFetchError] = useState('')
+  const [confirmAction, setConfirmAction] = useState(null)
 
   const orderStatuses = [
     'pending',
@@ -71,6 +73,34 @@ function AdminOrderDetails() {
       dateStyle: 'medium',
       timeStyle: 'short',
     })
+  }
+
+  const getReferenceNumber = (orderObj) =>
+    orderObj?.gcash_reference_number ||
+    orderObj?.reference_number ||
+    orderObj?.shipping_reference_number ||
+    orderObj?.payment_reference ||
+    ''
+
+  const getReceiptSrc = (orderObj) => {
+    const rawReceipt =
+      orderObj?.receipt_image ||
+      orderObj?.shipping_receipt ||
+      orderObj?.payment_receipt ||
+      orderObj?.gcash_receipt ||
+      ''
+
+    if (!rawReceipt) return ''
+    if (
+      rawReceipt.startsWith('http://') ||
+      rawReceipt.startsWith('https://') ||
+      rawReceipt.startsWith('data:')
+    ) {
+      return rawReceipt
+    }
+    return rawReceipt.startsWith('/')
+      ? `${API_ORIGIN}${rawReceipt}`
+      : `${API_ORIGIN}/${rawReceipt}`
   }
 
   const loadOrder = async () => {
@@ -159,22 +189,8 @@ function AdminOrderDetails() {
     }
   }, [id])
 
-  const handleStatusUpdate = async () => {
+  const executeStatusUpdate = async () => {
     if (!order || !selectedStatus || savingStatus) return
-
-    if (selectedStatus === order.status) {
-      setStatusMessage('The order already has this status.')
-      setStatusError(false)
-      return
-    }
-
-    if (
-      !window.confirm(
-        `Change order status to ${formatStatus(selectedStatus)}?`
-      )
-    ) {
-      return
-    }
 
     setSavingStatus(true)
     setStatusMessage('')
@@ -205,6 +221,7 @@ function AdminOrderDetails() {
         status: selectedStatus,
       }))
 
+      setConfirmAction(null)
       setStatusMessage('Order status updated successfully.')
     } catch (error) {
       setStatusMessage(error.message || 'Something went wrong.')
@@ -214,21 +231,25 @@ function AdminOrderDetails() {
     }
   }
 
-  const handleAssignRider = async () => {
-    if (!order) return
+  const handleStatusUpdate = () => {
+    if (!order || !selectedStatus || savingStatus) return
 
-    const cleanName = riderName.trim()
-    const cleanContact = riderContact.trim()
-
-    if (!cleanName || !cleanContact || savingRider) {
-      setRiderMessage('Enter the rider name and contact number.')
-      setRiderError(true)
+    if (selectedStatus === order.status) {
+      setStatusMessage('The order already has this status.')
+      setStatusError(false)
       return
     }
 
-    if (!window.confirm('Save these rider details for this order?')) {
-      return
-    }
+    setConfirmAction({
+      type: 'status',
+      title: 'Update Order Status?',
+      message: `Change order status to ${formatStatus(selectedStatus)}?`,
+      confirmLabel: 'Yes, Update Status',
+    })
+  }
+
+  const executeAssignRider = async (cleanName, cleanContact) => {
+    if (!order || savingRider) return
 
     setSavingRider(true)
     setRiderMessage('')
@@ -257,6 +278,7 @@ function AdminOrderDetails() {
 
       await loadOrder()
 
+      setConfirmAction(null)
       setRiderMessage(
         data.message || 'Rider details saved successfully.'
       )
@@ -266,6 +288,39 @@ function AdminOrderDetails() {
       setRiderError(true)
     } finally {
       setSavingRider(false)
+    }
+  }
+
+  const handleAssignRider = () => {
+    if (!order) return
+
+    const cleanName = riderName.trim()
+    const cleanContact = riderContact.trim()
+
+    if (!cleanName || !cleanContact || savingRider) {
+      setRiderMessage('Enter the rider name and contact number.')
+      setRiderError(true)
+      return
+    }
+
+    setConfirmAction({
+      type: 'rider',
+      title: 'Save Rider Details?',
+      message: `Assign ${cleanName} (${cleanContact}) to this order?`,
+      confirmLabel: 'Yes, Save Rider',
+      payload: { cleanName, cleanContact },
+    })
+  }
+
+  const handleConfirmModalProceed = () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'status') {
+      executeStatusUpdate()
+    } else if (confirmAction.type === 'rider') {
+      executeAssignRider(
+        confirmAction.payload.cleanName,
+        confirmAction.payload.cleanContact
+      )
     }
   }
 
@@ -294,6 +349,10 @@ function AdminOrderDetails() {
       </div>
     )
   }
+
+  const referenceNumber = getReferenceNumber(order)
+  const receiptSrc = getReceiptSrc(order)
+  const isConfirmBusy = savingStatus || savingRider
 
   return (
     <div className="admin-order-details-page">
@@ -567,7 +626,7 @@ function AdminOrderDetails() {
 
             <div>
               <h3>Payment Information</h3>
-              <p>Payment method and current status</p>
+              <p>Payment method and shipping fee verification</p>
             </div>
           </div>
 
@@ -590,6 +649,48 @@ function AdminOrderDetails() {
                 <strong>{formatCurrency(order.payment_amount)}</strong>
               </div>
             )}
+
+            <div>
+              <span>GCash reference no.</span>
+              <strong>{referenceNumber || 'Not yet provided'}</strong>
+            </div>
+
+            <div className="admin-detail-full">
+              <span>Shipping receipt (optional)</span>
+              {receiptSrc ? (
+                <div style={{ marginTop: '8px' }}>
+                  <a
+                    href={receiptSrc}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      fontSize: '0.84rem',
+                      marginBottom: '8px',
+                      color: '#15803d',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Open full receipt image ↗
+                  </a>
+                  <div>
+                    <img
+                      src={receiptSrc}
+                      alt="Consumer GCash Shipping Receipt"
+                      style={{
+                        maxWidth: '240px',
+                        width: '100%',
+                        height: 'auto',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <strong>No receipt image uploaded (optional)</strong>
+              )}
+            </div>
           </div>
         </section>
 
@@ -693,6 +794,99 @@ function AdminOrderDetails() {
           <strong>{formatCurrency(order.total_amount)}</strong>
         </div>
       </section>
+
+      {confirmAction && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !isConfirmBusy && setConfirmAction(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '410px',
+              backgroundColor: '#ffffff',
+              borderRadius: '14px',
+              padding: '22px',
+              boxShadow: '0 20px 45px rgba(0, 0, 0, 0.22)',
+              color: '#1e293b',
+            }}
+          >
+            <h3
+              style={{
+                margin: '0 0 8px',
+                fontSize: '1.12rem',
+                fontWeight: 700,
+                color: '#0f172a',
+              }}
+            >
+              {confirmAction.title}
+            </h3>
+            <p
+              style={{
+                margin: '0 0 18px',
+                fontSize: '0.94rem',
+                color: '#475569',
+                lineHeight: 1.5,
+              }}
+            >
+              {confirmAction.message}
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                disabled={isConfirmBusy}
+                style={{
+                  padding: '9px 15px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  color: '#334155',
+                  fontWeight: 600,
+                  cursor: isConfirmBusy ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmModalProceed}
+                disabled={isConfirmBusy}
+                style={{
+                  padding: '9px 15px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#15803d',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  cursor: isConfirmBusy ? 'not-allowed' : 'pointer',
+                  opacity: isConfirmBusy ? 0.65 : 1,
+                }}
+              >
+                {isConfirmBusy ? 'Saving...' : confirmAction.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

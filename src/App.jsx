@@ -58,6 +58,7 @@ import AdminLayout from './pages/Admin/AdminLayout'
 import AdminMessages from './pages/Admin/Admin.Messages'
 import AdminLogin from './pages/Admin/Adminlogin'
 import AdminSettings from './pages/Admin/AdminSettings'
+import AdminGcashQr from './pages/Admin/AdminGcashQr'
 import LoadingScreen from './pages/LoadingScreen'
 import AdminConsumers from './pages/Admin/AdminConsumers'
 
@@ -1023,6 +1024,11 @@ function AppContent() {
             <Route
               path="messages"
               element={<AdminMessages />}
+            />
+
+            <Route
+              path="gcash-qr"
+              element={<AdminGcashQr />}
             />
 
             <Route

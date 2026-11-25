@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import {
   ShoppingCart,
@@ -13,11 +12,15 @@ import './AdminOrders.css'
 function AdminOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
 
   // FETCH ORDERS
-  const fetchOrders = async () => {
+  const fetchOrders = async (isManualRefresh = false) => {
     try {
+      if (isManualRefresh) {
+        setRefreshing(true)
+      }
       // Keep previously loaded orders visible during refresh.
       setError('')
 
@@ -34,11 +37,12 @@ function AdminOrders() {
       setError(err.message || 'Unable to load orders.')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
   useEffect(() => {
-    fetchOrders()
+    fetchOrders(false)
   }, [])
 
   const formatDate = date => {
@@ -74,11 +78,11 @@ function AdminOrders() {
         <button
           type="button"
           className="admin-orders-refresh"
-          onClick={fetchOrders}
-          disabled={loading}
+          onClick={() => fetchOrders(true)}
+          disabled={refreshing}
         >
           <RefreshCw size={16} />
-          {loading ? 'Loading...' : 'Refresh Orders'}
+          {refreshing ? 'Refreshing...' : 'Refresh Orders'}
         </button>
       </div>
 
@@ -113,7 +117,7 @@ function AdminOrders() {
             <button
               type="button"
               className="admin-orders-primary-btn"
-              onClick={fetchOrders}
+              onClick={() => fetchOrders(true)}
             >
               Try Again
             </button>
@@ -132,7 +136,7 @@ function AdminOrders() {
               <div className="admin-orders-inline-error">
                 <AlertCircle size={16} />
                 {error}
-                <button type="button" onClick={fetchOrders}>
+                <button type="button" onClick={() => fetchOrders(true)}>
                   Retry
                 </button>
               </div>

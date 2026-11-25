@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { notify } from "../utils/notify";
 import "../App.css";
 
 const API_BASE_URL =
@@ -46,24 +47,38 @@ function Orders() {
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(null);
 
+  const [orderToCancel, setOrderToCancel] = useState(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
+
+  const token = localStorage.getItem("token");
+
+  const fetchOrdersList = async () => {
+    const savedUser = localStorage.getItem("user");
+    if (!savedUser) {
+      setOrders([]);
+      return;
+    }
+
+    const user = JSON.parse(savedUser);
+    const response = await fetch(
+      `${API_BASE_URL}/api/orders?user_id=${user.user_id}`,
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to load orders");
+    }
+
+    const data = await response.json();
+    setOrders(Array.isArray(data) ? data : []);
+  };
+
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const savedUser = localStorage.getItem("user");
-
-        if (!savedUser) {
-          setLoading(false);
-          return;
-        }
-        const user = JSON.parse(savedUser);
-        const response = await fetch(
-          `${API_BASE_URL}/api/orders?user_id=${user.user_id}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to load orders");
-        }
-        const data = await response.json();
-        setOrders(Array.isArray(data) ? data : []);
+        await fetchOrdersList();
       } catch (error) {
         console.error("Failed to load orders:", error);
       } finally {
@@ -81,9 +96,9 @@ function Orders() {
 
     try {
       setDetailsLoading(orderId);
-      const response = await fetch(
-        `${API_BASE_URL}/api/orders/${orderId}`
-      );
+      const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!response.ok) {
         throw new Error("Failed to load order details");
       }
@@ -91,14 +106,146 @@ function Orders() {
       setSelectedOrder(data);
     } catch (error) {
       console.error("Failed to load order details:", error);
-      alert("Failed to load order details. Please try again.");
+      notify(
+        "error",
+        "Error",
+        "Failed to load order details. Please try again."
+      );
     } finally {
       setDetailsLoading(null);
     }
   };
 
-  const formatMoney = (amount) =>
-    `₱${Number(amount || 0).toFixed(2)}`;
+  const canCancelOrder = (order) => {
+    const currentStatus = String(
+      order?.status || order?.order_status || "pending"
+    ).toLowerCase();
+    return currentStatus === "pending";
+  };
+
+  const openCancelModal = (order) => {
+    if (!order?.order_id || cancellingOrderId) return;
+    setOrderToCancel(order);
+  };
+
+  const closeCancelModal = () => {
+    if (cancellingOrderId) return;
+    setOrderToCancel(null);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel?.order_id || cancellingOrderId) return;
+
+    const targetOrder = orderToCancel;
+    const formattedId = `#AM-${String(targetOrder.order_id).padStart(4, "0")}`;
+
+    setCancellingOrderId(targetOrder.order_id);
+
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      let response = await fetch(
+        `${API_BASE_URL}/api/orders/${targetOrder.order_id}/cancel` ,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({
+            status: "cancelled",
+            reason: "Cancelled by consumer",
+          }),
+        }
+      );
+
+      if (response.status === 404 || response.status === 405) {
+        response = await fetch(
+          `${API_BASE_URL}/api/orders/${targetOrder.order_id}`,
+          {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ status: "cancelled" }),
+          }
+        );
+      }
+
+      const rawText = await response.text();
+      let data = {};
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to cancel this order.");
+      }
+
+      setOrders((prev) =>
+        prev.map((item) =>
+          item.order_id === targetOrder.order_id
+            ? { ...item, status: "cancelled" }
+            : item
+        )
+      );
+
+      if (selectedOrder?.order?.order_id === targetOrder.order_id) {
+        setSelectedOrder((prev) => ({
+          ...prev,
+          order: { ...prev.order, status: "cancelled" },
+        }));
+      }
+
+      setOrderToCancel(null);
+
+      notify(
+        "success",
+        "Order Cancelled",
+        `Order ${formattedId} has been cancelled.`
+      );
+    } catch (error) {
+      console.error("Cancel order error:", error);
+      notify(
+        "error",
+        "Cancellation Failed",
+        error.message ||
+          "Could not cancel order. Check if your backend supports order cancellation."
+      );
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
+  const getReferenceNumber = (order) =>
+    order?.gcash_reference_number ||
+    order?.reference_number ||
+    order?.shipping_reference_number ||
+    order?.payment_reference ||
+    "";
+
+  const getReceiptSrc = (order) => {
+    const rawReceipt =
+      order?.receipt_image ||
+      order?.shipping_receipt ||
+      order?.payment_receipt ||
+      order?.gcash_receipt ||
+      "";
+
+    if (!rawReceipt) return "";
+    if (
+      rawReceipt.startsWith("http://") ||
+      rawReceipt.startsWith("https://") ||
+      rawReceipt.startsWith("data:")
+    ) {
+      return rawReceipt;
+    }
+    return rawReceipt.startsWith("/")
+      ? `${API_BASE_URL}${rawReceipt}`
+      : `${API_BASE_URL}/${rawReceipt}`;
+  };
+
+  const formatMoney = (amount) => `₱${Number(amount || 0).toFixed(2)}`;
 
   const formatStatus = (status) =>
     status
@@ -111,7 +258,9 @@ function Orders() {
     if (status === "cancelled") {
       return (
         <div className="tracking-cancelled">
-          <p><strong>Order Cancelled</strong></p>
+          <p>
+            <strong>Order Cancelled</strong>
+          </p>
           <p>This order has been cancelled.</p>
         </div>
       );
@@ -128,8 +277,7 @@ function Orders() {
         </p>
         <div className="tracking-timeline">
           {trackingSteps.map((step, index) => {
-            const isComplete =
-              currentIndex >= 0 && index <= currentIndex;
+            const isComplete = currentIndex >= 0 && index <= currentIndex;
             const isCurrent = index === currentIndex;
             return (
               <div
@@ -196,6 +344,15 @@ function Orders() {
           {orders.map((order) => {
             const isExpanded =
               selectedOrder?.order?.order_id === order.order_id;
+            const allowCancel = canCancelOrder(order);
+            const isCancelling = cancellingOrderId === order.order_id;
+
+            const detailOrder = isExpanded ? selectedOrder.order : null;
+            const referenceNumber = detailOrder
+              ? getReferenceNumber(detailOrder)
+              : "";
+            const receiptSrc = detailOrder ? getReceiptSrc(detailOrder) : "";
+
             return (
               <div className="order-card" key={order.order_id}>
                 <div className="order-card-header">
@@ -222,30 +379,65 @@ function Orders() {
                     </span>
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="view-order-btn"
-                  onClick={() => viewOrder(order.order_id)}
-                  aria-expanded={isExpanded}
+
+                <div
+                  className="order-card-actions"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    flexWrap: "wrap",
+                    marginTop: "12px",
+                  }}
                 >
-                  {detailsLoading === order.order_id
-                    ? "Loading details..."
-                    : isExpanded
-                      ? "Hide Order Details ↑"
-                      : "View Order Details ↓"}
-                </button>
+                  <button
+                    type="button"
+                    className="view-order-btn"
+                    onClick={() => viewOrder(order.order_id)}
+                    aria-expanded={isExpanded}
+                  >
+                    {detailsLoading === order.order_id
+                      ? "Loading details..."
+                      : isExpanded
+                        ? "Hide Order Details ↑"
+                        : "View Order Details ↓"}
+                  </button>
+
+                  {allowCancel && (
+                    <button
+                      type="button"
+                      className="cancel-order-btn"
+                      onClick={() => openCancelModal(order)}
+                      disabled={isCancelling}
+                      style={{
+                        padding: "9px 14px",
+                        borderRadius: "8px",
+                        border: "1px solid #dc2626",
+                        backgroundColor: "#fff5f5",
+                        color: "#b91c1c",
+                        fontWeight: 600,
+                        fontSize: "0.9rem",
+                        cursor: isCancelling ? "not-allowed" : "pointer",
+                        opacity: isCancelling ? 0.65 : 1,
+                      }}
+                    >
+                      {isCancelling ? "Cancelling..." : "Cancel Order"}
+                    </button>
+                  )}
+                </div>
+
                 {detailsLoading === order.order_id && (
                   <div className="order-details-dropdown">
                     <p>Loading order details...</p>
                   </div>
                 )}
-                {isExpanded && (
+                {isExpanded && detailOrder && (
                   <div className="order-details-dropdown">
                     <h3>
                       Order #AM-
-                      {String(selectedOrder.order.order_id).padStart(4, "0")}
+                      {String(detailOrder.order_id).padStart(4, "0")}
                     </h3>
-                    {renderTracking(selectedOrder.order.status)}
+                    {renderTracking(detailOrder.status)}
                     <div className="order-detail-section">
                       <h4>Ordered Products</h4>
                       {selectedOrder.items?.length ? (
@@ -270,7 +462,7 @@ function Orders() {
                       <div className="order-detail-total">
                         <strong>Total</strong>
                         <strong>
-                          {formatMoney(selectedOrder.order.total_amount)}
+                          {formatMoney(detailOrder.total_amount)}
                         </strong>
                       </div>
                     </div>
@@ -278,29 +470,27 @@ function Orders() {
                       <h4>Delivery Information</h4>
                       <p>
                         <strong>Address:</strong>{" "}
-                        {selectedOrder.order.delivery_address || "Not provided"}
+                        {detailOrder.delivery_address || "Not provided"}
                       </p>
                       <p>
                         <strong>Contact:</strong>{" "}
-                        {selectedOrder.order.contact_number || "Not provided"}
+                        {detailOrder.contact_number || "Not provided"}
                       </p>
                       <p>
                         <strong>Driver / Rider:</strong>{" "}
-                        {selectedOrder.order.rider_name || "Not yet assigned"}
+                        {detailOrder.rider_name || "Not yet assigned"}
                       </p>
                       <p>
                         <strong>Driver Mobile:</strong>{" "}
-                        {selectedOrder.order.rider_contact_number ||
-                          "Not available"}
+                        {detailOrder.rider_contact_number || "Not available"}
                       </p>
                       <p>
                         <strong>Delivery Status:</strong>{" "}
-                        {formatStatus(selectedOrder.order.delivery_status)}
+                        {formatStatus(detailOrder.delivery_status)}
                       </p>
-                      {selectedOrder.order.notes && (
+                      {detailOrder.notes && (
                         <p>
-                          <strong>Notes:</strong>{" "}
-                          {selectedOrder.order.notes}
+                          <strong>Notes:</strong> {detailOrder.notes}
                         </p>
                       )}
                     </div>
@@ -308,22 +498,157 @@ function Orders() {
                       <h4>Payment Information</h4>
                       <p>
                         <strong>Method:</strong>{" "}
-                        {selectedOrder.order.payment_method || "Not available"}
+                        {detailOrder.payment_method || "Not available"}
                       </p>
                       <p>
                         <strong>Payment Status:</strong>{" "}
-                        {formatStatus(selectedOrder.order.payment_status)}
+                        {formatStatus(detailOrder.payment_status)}
                       </p>
                       <p>
                         <strong>Amount:</strong>{" "}
-                        {formatMoney(selectedOrder.order.payment_amount)}
+                        {formatMoney(detailOrder.payment_amount)}
                       </p>
+                      <p>
+                        <strong>GCash Reference No.:</strong>{" "}
+                        {referenceNumber || "Not yet provided"}
+                      </p>
+                      <div style={{ marginTop: "8px" }}>
+                        <strong>Shipping Receipt (Optional):</strong>
+                        {receiptSrc ? (
+                          <div style={{ marginTop: "8px" }}>
+                            <img
+                              src={receiptSrc}
+                              alt="GCash Shipping Receipt"
+                              style={{
+                                maxWidth: "220px",
+                                width: "100%",
+                                height: "auto",
+                                borderRadius: "8px",
+                                border: "1px solid #cbd5e1",
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <p
+                            style={{
+                              margin: "4px 0 0",
+                              fontSize: "0.88rem",
+                              color: "#64748b",
+                            }}
+                          >
+                            No receipt image uploaded (optional).
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {orderToCancel && (
+        <div
+          className="cancel-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancelModalTitle"
+          onClick={closeCancelModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            className="cancel-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              backgroundColor: "#ffffff",
+              borderRadius: "14px",
+              padding: "22px",
+              boxShadow: "0 20px 45px rgba(0, 0, 0, 0.22)",
+              color: "#1e293b",
+            }}
+          >
+            <h3
+              id="cancelModalTitle"
+              style={{
+                margin: "0 0 10px",
+                fontSize: "1.15rem",
+                fontWeight: 700,
+                color: "#0f172a",
+              }}
+            >
+              Cancel Order #AM-
+              {String(orderToCancel.order_id).padStart(4, "0")}?
+            </h3>
+
+            <p
+              style={{
+                margin: "0 0 18px",
+                fontSize: "0.94rem",
+                lineHeight: 1.5,
+                color: "#475569",
+              }}
+            >
+              Are you sure you want to cancel this order? If you already paid
+              an advance shipping fee via GCash, please coordinate with the LGU
+              Admin regarding your payment.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeCancelModal}
+                disabled={Boolean(cancellingOrderId)}
+                style={{
+                  padding: "9px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#f8fafc",
+                  color: "#334155",
+                  fontWeight: 600,
+                  cursor: cancellingOrderId ? "not-allowed" : "pointer",
+                }}
+              >
+                Keep Order
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmCancelOrder}
+                disabled={Boolean(cancellingOrderId)}
+                style={{
+                  padding: "9px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  cursor: cancellingOrderId ? "not-allowed" : "pointer",
+                  opacity: cancellingOrderId ? 0.65 : 1,
+                }}
+              >
+                {cancellingOrderId ? "Cancelling..." : "Yes, Cancel Order"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

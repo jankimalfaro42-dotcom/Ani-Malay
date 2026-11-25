@@ -1,5 +1,5 @@
-
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import {
   MessageCircle,
   Send,
@@ -8,8 +8,20 @@ import {
 import './AdminMessages.css'
 
 const API_URL = 'https://ani-malay-production.up.railway.app/api/messages'
+const USERS_API_URL = 'https://ani-malay-production.up.railway.app/api/users'
 
 function AdminMessages() {
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+
+  const queryUserId = searchParams.get('userId') || searchParams.get('consumerId')
+  const stateUserId =
+    location.state?.selectedUserId ?? location.state?.userId ?? null
+  const targetUserId = queryUserId || stateUserId
+
+  const stateConsumerName = location.state?.consumerName || ''
+  const stateConsumerEmail = location.state?.consumerEmail || ''
+
   const [conversations, setConversations] = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
   const [messages, setMessages] = useState([])
@@ -19,6 +31,9 @@ function AdminMessages() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [adminStatus, setAdminStatus] = useState('checking')
+
+  const selectedUserRef = useRef(null)
+  selectedUserRef.current = selectedUser
 
   const token = localStorage.getItem('token')
 
@@ -63,6 +78,63 @@ function AdminMessages() {
     return () => clearInterval(interval)
   }, [fetchAdminPresence])
 
+  // RESOLVE TARGET CONSUMER IF NOT YET IN CONVERSATIONS LIST
+  const resolveTargetConsumer = useCallback(
+    async (userId) => {
+      if (!userId) return null
+
+      const numericId = Number(userId)
+
+      if (stateConsumerName || stateConsumerEmail) {
+        return {
+          user_id: numericId,
+          full_name: stateConsumerName || `Consumer #${numericId}`,
+          email: stateConsumerEmail || '',
+          latest_message: '',
+          unread_count: 0,
+        }
+      }
+
+      try {
+        const response = await fetch(`${USERS_API_URL}/${numericId}`, {
+          headers: token
+            ? { Authorization: `Bearer ${token}` }
+            : undefined,
+        })
+
+        if (!response.ok) {
+          return {
+            user_id: numericId,
+            full_name: `Consumer #${numericId}`,
+            email: '',
+            latest_message: '',
+            unread_count: 0,
+          }
+        }
+
+        const data = await response.json()
+        const consumer = data?.user || data
+
+        return {
+          user_id: Number(consumer?.user_id || numericId),
+          full_name: consumer?.full_name || `Consumer #${numericId}`,
+          email: consumer?.email || '',
+          latest_message: '',
+          unread_count: 0,
+        }
+      } catch {
+        return {
+          user_id: numericId,
+          full_name: `Consumer #${numericId}`,
+          email: '',
+          latest_message: '',
+          unread_count: 0,
+        }
+      }
+    },
+    [stateConsumerName, stateConsumerEmail, token]
+  )
+
   // FETCH CONVERSATIONS
   const fetchConversations = useCallback(async () => {
     if (!token) {
@@ -88,14 +160,29 @@ function AdminMessages() {
       setConversations(list)
       setError('')
 
-      if (selectedUser) {
+      const currentSelected = selectedUserRef.current
+
+      if (currentSelected) {
         const updatedSelectedUser = list.find(
           (item) =>
-            Number(item.user_id) === Number(selectedUser.user_id)
+            Number(item.user_id) === Number(currentSelected.user_id)
         )
 
         if (updatedSelectedUser) {
           setSelectedUser(updatedSelectedUser)
+        }
+      } else if (targetUserId) {
+        const matched = list.find(
+          (item) => Number(item.user_id) === Number(targetUserId)
+        )
+
+        if (matched) {
+          setSelectedUser(matched)
+        } else {
+          const fallbackUser = await resolveTargetConsumer(targetUserId)
+          if (fallbackUser) {
+            setSelectedUser(fallbackUser)
+          }
         }
       }
     } catch (err) {
@@ -103,7 +190,7 @@ function AdminMessages() {
     } finally {
       setLoadingConversations(false)
     }
-  }, [token, selectedUser])
+  }, [token, targetUserId, resolveTargetConsumer])
 
   // FETCH MESSAGES
   const fetchMessages = useCallback(async (userId) => {

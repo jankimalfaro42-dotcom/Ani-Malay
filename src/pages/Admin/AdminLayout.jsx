@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import {
@@ -19,10 +18,13 @@ import {
 
 import './AdminLayout.css'
 
-const API_URL = 'https://ani-malay-production.up.railway.app/api/messages'
+const BASE_API_URL = 'https://ani-malay-production.up.railway.app/api'
+const API_URL = `${BASE_API_URL}/messages`
 
 function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0)
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
 
   const token = localStorage.getItem('token')
 
@@ -68,6 +70,123 @@ function AdminLayout() {
     }
   }, [token])
 
+  // NEW / PENDING ORDERS BADGE COUNT
+  useEffect(() => {
+    if (!token) return
+
+    let isMounted = true
+
+    const fetchPendingOrdersCount = async () => {
+      try {
+        const res = await fetch(`${BASE_API_URL}/orders`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!res.ok) return
+
+        const data = await res.json()
+        const ordersList = Array.isArray(data)
+          ? data
+          : Array.isArray(data.orders)
+          ? data.orders
+          : []
+
+        const count = ordersList.filter(
+          (order) =>
+            String(order.status || order.order_status || '').toLowerCase() === 'pending'
+        ).length
+
+        if (isMounted) {
+          setPendingOrdersCount(count)
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to fetch pending orders count:', error)
+        }
+      }
+    }
+
+    fetchPendingOrdersCount()
+
+    const interval = setInterval(fetchPendingOrdersCount, 30000)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [token])
+
+  // UNREAD / NEW MESSAGES BADGE COUNT
+  useEffect(() => {
+    if (!token) return
+
+    let isMounted = true
+
+    const fetchUnreadMessagesCount = async () => {
+      try {
+        const res = await fetch(`${API_URL}/conversations`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!res.ok) return
+
+        const data = await res.json()
+
+        let totalUnread = 0
+
+        if (typeof data?.unreadCount === 'number') {
+          totalUnread = data.unreadCount
+        } else if (typeof data?.unread_count === 'number') {
+          totalUnread = data.unread_count
+        } else {
+          const list = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.conversations)
+            ? data.conversations
+            : Array.isArray(data?.messages)
+            ? data.messages
+            : []
+
+          totalUnread = list.reduce((sum, item) => {
+            const itemUnread = Number(
+              item.unread_count ?? item.unreadCount ?? 0
+            )
+            if (itemUnread > 0) return sum + itemUnread
+
+            const isUnread =
+              item.is_read === 0 ||
+              item.is_read === false ||
+              item.read === false ||
+              String(item.status || '').toLowerCase() === 'unread'
+
+            return sum + (isUnread ? 1 : 0)
+          }, 0)
+        }
+
+        if (isMounted) {
+          setUnreadMessagesCount(totalUnread)
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to fetch unread messages count:', error)
+        }
+      }
+    }
+
+    fetchUnreadMessagesCount()
+
+    const interval = setInterval(fetchUnreadMessagesCount, 15000)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [token])
+
   const navItems = [
     {
       to: '/admin',
@@ -94,6 +213,7 @@ function AdminLayout() {
       to: '/admin/orders',
       label: 'Orders',
       icon: ShoppingCart,
+      badge: pendingOrdersCount,
     },
     {
       to: '/admin/deliveries',
@@ -109,6 +229,7 @@ function AdminLayout() {
       to: '/admin/messages',
       label: 'Messages',
       icon: MessageCircle,
+      badge: unreadMessagesCount,
     },
     {
       to: '/admin/feedbacks',
@@ -232,7 +353,7 @@ function AdminLayout() {
             WORKSPACE
           </span>
 
-          {navItems.map(({ to, label, icon: Icon, end }) => (
+          {navItems.map(({ to, label, icon: Icon, end, badge }) => (
             <NavLink
               key={to}
               to={to}
@@ -243,7 +364,15 @@ function AdminLayout() {
               }
             >
               <Icon size={19} />
-              <span>{label}</span>
+              <span className="admin-nav-label-text">{label}</span>
+              {badge > 0 && (
+                <span
+                  className="admin-nav-badge"
+                  aria-label={`${badge} unread`}
+                >
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

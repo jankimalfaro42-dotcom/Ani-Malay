@@ -5,6 +5,7 @@ import { notify } from '../utils/notify'
 import '../App.css'
 
 const API_URL = 'https://ani-malay-production.up.railway.app'
+const LOCAL_GCASH_STORAGE_KEY = 'ani_malay_gcash_qr_config'
 
 const DELIVERY_AREAS = {
   malay_mainland: { label: 'Malay (Mainland)', fee: 0 },
@@ -33,6 +34,15 @@ async function parseApiResponse(response, fallbackErrorMessage) {
   }
 }
 
+function getLocalGcashConfig() {
+  try {
+    const raw = localStorage.getItem(LOCAL_GCASH_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 function Checkout() {
   const navigate = useNavigate()
 
@@ -50,6 +60,26 @@ function Checkout() {
   const [receiptImage, setReceiptImage] = useState(null)
 
   const [pendingOrderId, setPendingOrderId] = useState(null)
+
+  const [gcashInfo, setGcashInfo] = useState(() => {
+    const saved = getLocalGcashConfig()
+    return {
+      accountName:
+        saved?.accountName ||
+        saved?.account_name ||
+        'Municipal Agriculture Office - LGU Malay',
+      accountNumber:
+        saved?.accountNumber ||
+        saved?.account_number ||
+        '09XX XXX XXXX',
+      qrImage:
+        saved?.qrImage ||
+        saved?.qr_image ||
+        saved?.qrUrl ||
+        saved?.qr_url ||
+        '',
+    }
+  })
 
   const token = localStorage.getItem('token')
   const savedUser = localStorage.getItem('user')
@@ -128,6 +158,59 @@ function Checkout() {
   }, [userId, token, navigate])
 
   // ==========================================
+  // LOAD LGU GCASH QR & ACCOUNT DETAILS
+  // ==========================================
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchGcashQr = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/gcash-qr`, {
+          headers: token
+            ? { Authorization: `Bearer ${token}` }
+            : undefined,
+        })
+
+        if (!response.ok) return
+
+        const contentType = response.headers.get('content-type') || ''
+        if (!contentType.includes('application/json')) return
+
+        const data = await response.json()
+        const payload = data?.data || data
+
+        if (isMounted && payload && typeof payload === 'object') {
+          setGcashInfo(prev => ({
+            accountName:
+              payload.accountName ||
+              payload.account_name ||
+              prev.accountName,
+            accountNumber:
+              payload.accountNumber ||
+              payload.account_number ||
+              prev.accountNumber,
+            qrImage:
+              payload.qrImage ||
+              payload.qr_image ||
+              payload.qrUrl ||
+              payload.qr_url ||
+              prev.qrImage,
+          }))
+        }
+      } catch {
+        // Fallback to localStorage / defaults silently if route is not yet on backend
+      }
+    }
+
+    fetchGcashQr()
+
+    return () => {
+      isMounted = false
+    }
+  }, [token])
+
+  // ==========================================
   // TOTALS
   // ==========================================
 
@@ -153,7 +236,7 @@ function Checkout() {
   }
 
   // ==========================================
-  // PLACE ORDER AND SUBMIT SHIPPING RECEIPT
+  // PLACE ORDER AND SUBMIT SHIPPING PAYMENT INFO
   // ==========================================
 
   const handleSubmit = async (e) => {
@@ -241,32 +324,11 @@ function Checkout() {
     }
 
     // ========================================
-    // ADVANCE SHIPPING PAYMENT VALIDATION
+    // OPTIONAL RECEIPT FILE VALIDATION ONLY IF UPLOADED
     // ========================================
 
-    if (requiresAdvancePayment) {
-      if (!referenceNumber.trim()) {
-        notify(
-          'warning',
-          'Reference Number Required',
-          'Please enter your GCash reference number.'
-        )
-        return
-      }
-
-      if (!receiptImage && !pendingOrderId) {
-        notify(
-          'warning',
-          'Receipt Required',
-          'Please upload your GCash payment receipt.'
-        )
-        return
-      }
-
-      if (
-        receiptImage &&
-        receiptImage.size > 5 * 1024 * 1024
-      ) {
+    if (requiresAdvancePayment && receiptImage) {
+      if (receiptImage.size > 5 * 1024 * 1024) {
         notify(
           'warning',
           'File Too Large',
@@ -276,7 +338,6 @@ function Checkout() {
       }
 
       if (
-        receiptImage &&
         ![
           'image/jpeg',
           'image/png',
@@ -325,6 +386,7 @@ function Checkout() {
               delivery_address: address.trim(),
               contact_number: contactNumber.trim(),
               notes: notes.trim(),
+              gcash_reference_number: referenceNumber.trim() || null,
               items: orderItems,
             }),
           }
@@ -352,27 +414,28 @@ function Checkout() {
       }
 
       // ======================================
-      // STEP 2: SUBMIT SHIPPING RECEIPT
+      // STEP 2: SUBMIT SHIPPING PAYMENT DETAILS IF PROVIDED
       // ======================================
 
-      if (requiresAdvancePayment) {
-        if (!receiptImage) {
-          throw new Error(
-            'Your order was created, but the receipt image is missing. Please select your receipt and submit again.'
+      if (
+        requiresAdvancePayment &&
+        (referenceNumber.trim() || receiptImage)
+      ) {
+        const formData = new FormData()
+
+        if (referenceNumber.trim()) {
+          formData.append(
+            'reference_number',
+            referenceNumber.trim()
           )
         }
 
-        const formData = new FormData()
-
-        formData.append(
-          'reference_number',
-          referenceNumber.trim()
-        )
-
-        formData.append(
-          'receipt_image',
-          receiptImage
-        )
+        if (receiptImage) {
+          formData.append(
+            'receipt_image',
+            receiptImage
+          )
+        }
 
         const receiptResponse = await fetch(
           `${API_URL}/api/payments/shipping/${orderId}/receipt`,
@@ -389,13 +452,13 @@ function Checkout() {
 
         const receiptData = await parseApiResponse(
           receiptResponse,
-          `Order created, but shipping receipt submission failed.`
+          'Order created, but shipping payment details submission failed.'
         )
 
         if (!receiptResponse.ok) {
           throw new Error(
             receiptData.message ||
-              'Order created, but shipping receipt submission failed. Please try again.'
+              'Order created, but shipping payment details submission failed. Please try again.'
           )
         }
       }
@@ -415,8 +478,8 @@ function Checkout() {
       if (requiresAdvancePayment) {
         notify(
           'info',
-          'Waiting for Admin Verification',
-          'Please message the LGU Admin for order confirmation. Verification may take approximately 1–5 minutes.'
+          'Advance Shipping Fee Verification',
+          'Your order will be processed once you have paid the shipping fee through the GCash number/QR provided and once the admin verifies your advance payment.'
         )
       }
 
@@ -605,7 +668,7 @@ function Checkout() {
 
                 <div>
                   <strong>
-                    Advance Shipping Fee Required
+                    Advance Shipping Fee Required (₱{deliveryFee.toFixed(2)})
                   </strong>
 
                   <p>
@@ -614,8 +677,35 @@ function Checkout() {
                     <strong>
                       ₱{deliveryFee.toFixed(2)}
                     </strong>{' '}
-                    through GCash.
+                    through GCash. Your order will be processed
+                    once you have paid the shipping fee through
+                    the GCash details provided below and once
+                    the admin verifies your advance payment.
                   </p>
+
+                  <div className="gcash-lgu-details">
+                    <p>
+                      <strong>GCash Name:</strong>{' '}
+                      {gcashInfo.accountName}
+                    </p>
+                    <p>
+                      <strong>GCash Number:</strong>{' '}
+                      {gcashInfo.accountNumber}
+                    </p>
+                    {gcashInfo.qrImage && (
+                      <div className="gcash-qr-preview-box">
+                        <img
+                          src={
+                            gcashInfo.qrImage.startsWith('/uploads/')
+                              ? `${API_URL}${gcashInfo.qrImage}`
+                              : gcashInfo.qrImage
+                          }
+                          alt="Official LGU Malay GCash QR Code"
+                          className="gcash-qr-image"
+                        />
+                      </div>
+                    )}
+                  </div>
 
                   <small>
                     Only the shipping fee is paid in advance.
@@ -695,20 +785,17 @@ function Checkout() {
             {requiresAdvancePayment && (
               <div className="gcash-required-note">
                 <strong>
-                  GCash Shipping Payment Instructions
+                  GCash Shipping Payment Details
                 </strong>
 
                 <p>
-                  Please obtain the official LGU Malay GCash
-                  QR code from the Municipal Agriculture
-                  Office/Admin and pay exactly ₱
-                  {deliveryFee.toFixed(2)}.
-                </p>
-
-                <p>
-                  Keep your GCash transaction receipt.
-                  Enter its reference number and upload
-                  a screenshot below.
+                  Pay exactly <strong>₱{deliveryFee.toFixed(2)}</strong>{' '}
+                  via GCash to <strong>{gcashInfo.accountName}</strong>{' '}
+                  (<strong>{gcashInfo.accountNumber}</strong>) or scan
+                  the QR code above. You can still place your order,
+                  and it will be processed once you have paid the
+                  shipping fee and the admin verifies your advance
+                  payment.
                 </p>
 
                 <div className="checkout-form-group">
@@ -720,13 +807,12 @@ function Checkout() {
                     onChange={(e) =>
                       setReferenceNumber(e.target.value)
                     }
-                    placeholder="Enter your GCash reference number"
-                    required
+                    placeholder="Enter GCash reference number (or leave blank if paying shortly)"
                   />
                 </div>
 
                 <div className="checkout-form-group">
-                  <label>Upload GCash Receipt</label>
+                  <label>Upload GCash Receipt (Optional)</label>
 
                   <input
                     type="file"
@@ -736,12 +822,12 @@ function Checkout() {
                         e.target.files?.[0] || null
                       )
                     }
-                    required={!pendingOrderId}
                   />
 
                   <small>
-                    Accepted formats: JPG, PNG, WEBP.
-                    Maximum size: 5 MB.
+                    Optional — picture is not required if you only
+                    enter a reference number or submit later.
+                    Accepted formats: JPG, PNG, WEBP. Max: 5 MB.
                   </small>
 
                   {receiptImage && (
@@ -759,10 +845,13 @@ function Checkout() {
                 <strong>Important Payment Reminder</strong>
 
                 <p>
-                  Only the shipping fee is paid in advance
-                  through GCash. The payment for your
-                  agricultural products will be collected
-                  upon delivery.
+                  Your order will be processed once you have paid
+                  the shipping fee through the GCash number/QR
+                  provided and once the admin verifies your
+                  advance payment. Only the shipping fee is paid
+                  in advance through GCash; payment for your
+                  agricultural products will be collected upon
+                  delivery (COD).
                 </p>
               </div>
             )}
@@ -863,7 +952,7 @@ function Checkout() {
           {pendingOrderId && (
             <p>
               Order #{pendingOrderId} was created.
-              Please complete your shipping receipt submission.
+              You can complete or retry your shipping payment details.
             </p>
           )}
 
@@ -875,7 +964,7 @@ function Checkout() {
             {isSubmitting
               ? 'Processing...'
               : pendingOrderId
-                ? 'Submit Shipping Receipt'
+                ? 'Submit Shipping Payment'
                 : 'Place Order'}
           </button>
 

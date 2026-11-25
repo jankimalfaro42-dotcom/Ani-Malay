@@ -12977,3 +12977,226 @@ gap: 10px;
   box-shadow: 0 18px 40px rgba(20, 56, 38, 0.10);
   border-radius: 18px;
 }
+/* =========================================
+   ADMIN GCASH QR MANAGEMENT (/admin/gcash-qr)
+   ========================================= */
+
+.admin-gcash-page {
+  padding: 24px;
+  max-width: 1120px;
+  margin: 0 auto;
+  color: #0f172a;
+}
+
+.admin-gcash-header {
+  margin-bottom: 22px;
+}
+
+.admin-gcash-header span {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.admin-gcash-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-gcash-header p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.admin-gcash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+
+.admin-gcash-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.admin-gcash-card h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-gcash-preview-sub {
+  margin: 0 0 16px;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.admin-gcash-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.admin-gcash-field label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.admin-gcash-field input[type="text"],
+.admin-gcash-field input[type="file"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.94rem;
+  color: #0f172a;
+  background: #f8fafc;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-gcash-field input[type="text"]:focus {
+  outline: none;
+  border-color: #16a34a;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14);
+}
+
+.admin-gcash-field small {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.admin-gcash-save-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 0.96rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.admin-gcash-save-btn:hover:not(:disabled) {
+  background: #166534;
+}
+
+.admin-gcash-save-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.admin-gcash-preview-meta {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.admin-gcash-preview-meta p {
+  margin: 0 0 6px;
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.admin-gcash-preview-meta p:last-child {
+  margin-bottom: 0;
+}
+
+.admin-gcash-qr-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 16px;
+  text-align: center;
+}
+
+.admin-gcash-qr-img {
+  max-width: 240px;
+  max-height: 240px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 8px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.admin-gcash-qr-empty {
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+/* =========================================
+   CHECKOUT LGU GCASH DETAILS & QR BOX
+   ========================================= */
+
+.gcash-lgu-details {
+  margin-top: 12px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.gcash-lgu-details p {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.gcash-qr-preview-box {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.gcash-qr-image {
+  max-width: 210px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 6px;
+  background: #ffffff;
+}
+
+@media (max-width: 820px) {
+  .admin-gcash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-gcash-page {
+    padding: 16px;
+  }
+}
