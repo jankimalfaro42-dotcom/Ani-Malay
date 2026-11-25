@@ -33,6 +33,8 @@ router.get('/', (req, res) => {
       o.product_amount,
       o.delivery_fee,
       o.total_amount,
+      o.gcash_reference_number,
+      o.receipt_image,
       o.status,
       o.order_date
     FROM orders o
@@ -81,6 +83,8 @@ router.get('/:id', (req, res) => {
       o.product_amount,
       o.delivery_fee,
       o.total_amount,
+      o.gcash_reference_number AS order_gcash_reference_number,
+      o.receipt_image AS order_receipt_image,
       o.status,
       o.order_date,
       d.delivery_area,
@@ -149,30 +153,76 @@ router.get('/:id', (req, res) => {
         })
       }
 
+      const paymentsList = orders
+        .filter(row => row.payment_id !== null)
+        .map(row => ({
+          payment_id: row.payment_id,
+          payment_type: row.payment_type,
+          payment_method: row.payment_method,
+          payment_status: row.payment_status,
+          amount: row.payment_amount,
+          reference_number: row.reference_number,
+          receipt_image: row.receipt_image,
+          refund_amount: row.refund_amount,
+          refunded_at: row.refunded_at,
+        }))
+
+      const shippingPayment = paymentsList.find(
+        p => p.payment_type === 'shipping'
+      )
+      const productPayment = paymentsList.find(
+        p => p.payment_type === 'product'
+      )
+      const primaryPayment = shippingPayment || productPayment || paymentsList[0] || null
+
+      const paymentMethods = [
+        ...new Set(
+          paymentsList
+            .map(p => p.payment_method)
+            .filter(Boolean)
+        ),
+      ]
+
+      const resolvedPaymentMethod =
+        paymentMethods.length > 1
+          ? paymentMethods.join(' + ')
+          : primaryPayment?.payment_method ||
+            (Number(orders[0].delivery_fee) > 0 ? 'COD + GCash' : 'COD')
+
+      const resolvedGcashRef =
+        orders[0].order_gcash_reference_number ||
+        shippingPayment?.reference_number ||
+        primaryPayment?.reference_number ||
+        null
+
+      const resolvedReceiptImage =
+        orders[0].order_receipt_image ||
+        shippingPayment?.receipt_image ||
+        primaryPayment?.receipt_image ||
+        null
+
       const order = {
         ...orders[0],
-        payments: orders
-          .filter(row => row.payment_id !== null)
-          .map(row => ({
-            payment_id: row.payment_id,
-            payment_type: row.payment_type,
-            payment_method: row.payment_method,
-            payment_status: row.payment_status,
-            amount: row.payment_amount,
-            reference_number: row.reference_number,
-            receipt_image: row.receipt_image,
-            refund_amount: row.refund_amount,
-            refunded_at: row.refunded_at,
-          })),
+        payment_method: resolvedPaymentMethod,
+        payment_status:
+          shippingPayment?.payment_status ||
+          primaryPayment?.payment_status ||
+          'pending',
+        payment_amount:
+          shippingPayment?.amount ??
+          primaryPayment?.amount ??
+          orders[0].total_amount,
+        gcash_reference_number: resolvedGcashRef,
+        receipt_image: resolvedReceiptImage,
+        payments: paymentsList,
       }
 
+      delete order.order_gcash_reference_number
+      delete order.order_receipt_image
       delete order.payment_id
       delete order.payment_type
-      delete order.payment_method
-      delete order.payment_status
       delete order.payment_amount
       delete order.reference_number
-      delete order.receipt_image
       delete order.refund_amount
       delete order.refunded_at
 
@@ -203,6 +253,7 @@ router.post('/', authMiddleware, (req, res) => {
       delivery_address,
       contact_number,
       notes,
+      gcash_reference_number,
       items,
     } = req.body || {}
 
@@ -227,6 +278,11 @@ router.post('/', authMiddleware, (req, res) => {
     }
 
     const deliveryFee = area.fee
+    const cleanGcashRef =
+      typeof gcash_reference_number === 'string' &&
+      gcash_reference_number.trim() !== ''
+        ? gcash_reference_number.trim()
+        : null
 
     db.getConnection((connError, connection) => {
       if (connError || !connection) {
@@ -376,8 +432,6 @@ router.post('/', authMiddleware, (req, res) => {
                     Number(o.product_id) === Number(product.product_id)
                 )
               } else {
-                // Backward compatibility for the old checkout.
-                // Uses the default one-unit option.
                 option = options.find(
                   o =>
                     Number(o.product_id) === Number(product.product_id) &&
@@ -399,12 +453,10 @@ router.post('/', authMiddleware, (req, res) => {
               if (Number(option.is_available) !== 1) {
                 return rollback(
                   400,
-                  `${option.option_label} of ${product.product_name} is currently unavailable.`
+                  ` ${option.option_label} of ${product.product_name} is currently unavailable.`
                 )
               }
 
-              // Do not allow the exact same option to appear twice.
-              // Different options of the same product are allowed.
               const pairKey = `${product.product_id}-${option.option_id}`
 
               if (selectedPairs.has(pairKey)) {
@@ -431,8 +483,6 @@ router.post('/', authMiddleware, (req, res) => {
                 )
               }
 
-              // Example:
-              // 2 packs x 0.250 kg = 0.500 kg deducted from stock.
               const actualStockQuantity = quantity * quantityValue
 
               stockDeductions[product.product_id] =
@@ -455,7 +505,6 @@ router.post('/', authMiddleware, (req, res) => {
               })
             }
 
-            // Check total stock usage per product.
             for (const product of products) {
               const requiredStock =
                 stockDeductions[product.product_id] || 0
@@ -487,14 +536,15 @@ router.post('/', authMiddleware, (req, res) => {
                 product_amount,
                 delivery_fee,
                 total_amount,
+                gcash_reference_number,
                 status
               )
-              VALUES (?, ?, ?, ?, 'pending')
+              VALUES (?, ?, ?, ?, ?, 'pending')
             `
 
             connection.query(
               orderSql,
-              [userId, productAmount, deliveryFee, totalAmount],
+              [userId, productAmount, deliveryFee, totalAmount, cleanGcashRef],
               (orderError, orderResult) => {
                 if (orderError) {
                   return rollback(500, 'Failed to create order.', orderError)
@@ -604,9 +654,10 @@ router.post('/', authMiddleware, (req, res) => {
                       payment_method,
                       amount,
                       payment_status,
+                      reference_number,
                       refund_amount
                     )
-                    VALUES (?, 'shipping', 'GCash', ?, 'pending', ?)
+                    VALUES (?, 'shipping', 'GCash', ?, 'pending', ?, ?)
                   `
 
                   const refundAmount =
@@ -614,7 +665,7 @@ router.post('/', authMiddleware, (req, res) => {
 
                   connection.query(
                     sql,
-                    [orderId, deliveryFee, refundAmount],
+                    [orderId, deliveryFee, cleanGcashRef, refundAmount],
                     error => {
                       if (error) {
                         return rollback(
@@ -786,6 +837,7 @@ router.post('/', authMiddleware, (req, res) => {
                         product_amount: productAmount,
                         delivery_fee: deliveryFee,
                         total_amount: totalAmount,
+                        gcash_reference_number: cleanGcashRef,
                         delivery_area,
                         delivery_area_label: area.label,
                         product_payment_method: 'COD',
