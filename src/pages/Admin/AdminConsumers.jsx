@@ -193,7 +193,7 @@ function AdminConsumers() {
       console.error('Consumers loading error:', err)
       if (!silent) {
         setError(
-          'Unable to load consumer accounts. Please check your server connection.'
+          `Unable to load consumer accounts. Please check your server connection.`
         )
       }
     } finally {
