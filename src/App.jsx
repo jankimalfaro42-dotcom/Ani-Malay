@@ -456,6 +456,7 @@ function AppContent() {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
+  const notificationRef = useRef(null)
 
   const fetchNotifications = async () => {
     const savedToken = localStorage.getItem('token')
@@ -525,9 +526,44 @@ function AppContent() {
     return () => clearInterval(interval)
   }, [isLoggedIn, isAdmin, user?.user_id])
 
+  // CLOSE NOTIFICATION DROPDOWN ON ROUTE CHANGE OR OUTSIDE CLICK
+  useEffect(() => {
+    setShowNotifications(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!showNotifications) return
+
+    const handleOutsideClick = (event) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('touchstart', handleOutsideClick)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('touchstart', handleOutsideClick)
+    }
+  }, [showNotifications])
+
   // MARK ONE NOTIFICATION AS READ
   const handleMarkAsRead = async (notificationId) => {
     const savedToken = localStorage.getItem('token')
+
+    setNotifications((prev) =>
+      prev.map((item) =>
+        item.notification_id === notificationId
+          ? { ...item, is_read: 1 }
+          : item
+      )
+    )
+    setUnreadCount((prev) => Math.max(0, prev - 1))
 
     try {
       const response = await fetch(
@@ -556,6 +592,11 @@ function AppContent() {
   // MARK ALL NOTIFICATIONS AS READ
   const handleMarkAllAsRead = async () => {
     const savedToken = localStorage.getItem('token')
+
+    setNotifications((prev) =>
+      prev.map((item) => ({ ...item, is_read: 1 }))
+    )
+    setUnreadCount(0)
 
     try {
       const response = await fetch(
@@ -621,13 +662,20 @@ function AppContent() {
   // =====================================
 
   const notificationBell = !isAdmin ? (
-    <div className="notification-wrapper">
+    <div className="notification-wrapper" ref={notificationRef}>
       <button
         type="button"
         className="notification-bell-btn"
         onClick={() => {
           if (!requireConsumerLogin('notifications')) return
-          setShowNotifications((prev) => !prev)
+
+          setShowNotifications((prev) => {
+            const nextState = !prev
+            if (nextState && unreadCount > 0) {
+              handleMarkAllAsRead()
+            }
+            return nextState
+          })
         }}
         title="Notifications"
         aria-label={`Notifications, ${unreadCount} unread`}
@@ -807,6 +855,7 @@ function AppContent() {
                 title="Messages"
                 aria-label={`Messages, ${messageUnreadCount} unread`}
                 onClick={() => {
+                  setShowNotifications(false)
                   if (!requireConsumerLogin('messages')) return
                   navigate('/messages')
                 }}
@@ -832,6 +881,7 @@ function AppContent() {
                 aria-label={`Shopping Cart, ${cartCount} items`}
                 title="Cart"
                 onClick={() => {
+                  setShowNotifications(false)
                   if (!requireConsumerLogin('cart')) return
                   navigate('/cart')
                 }}
@@ -989,6 +1039,7 @@ function AppContent() {
           <NavLink
             to="/"
             end
+            onClick={() => setShowNotifications(false)}
             className={({ isActive }) =>
               `home-bottom-link ${isActive ? 'active' : ''}`
             }
@@ -999,6 +1050,7 @@ function AppContent() {
 
           <NavLink
             to="/products"
+            onClick={() => setShowNotifications(false)}
             className={({ isActive }) =>
               `home-bottom-link ${isActive ? 'active' : ''}`
             }
@@ -1009,6 +1061,7 @@ function AppContent() {
 
           <NavLink
             to="/orders"
+            onClick={() => setShowNotifications(false)}
             className={({ isActive }) =>
               `home-bottom-link ${isActive ? 'active' : ''}`
             }
@@ -1019,6 +1072,7 @@ function AppContent() {
 
           <NavLink
             to="/feedback"
+            onClick={() => setShowNotifications(false)}
             className={({ isActive }) =>
               `home-bottom-link ${isActive ? 'active' : ''}`
             }
@@ -1029,6 +1083,7 @@ function AppContent() {
 
           <NavLink
             to="/my-account"
+            onClick={() => setShowNotifications(false)}
             className={({ isActive }) =>
               `home-bottom-link ${isActive ? 'active' : ''}`
             }

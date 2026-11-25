@@ -89,6 +89,9 @@ router.get('/:id', (req, res) => {
       d.delivery_status,
       d.delivery_date,
       d.notes,
+      d.rider_id,
+      r.full_name AS rider_name,
+      r.contact_number AS rider_contact_number,
       p.payment_id,
       p.payment_type,
       p.payment_method,
@@ -101,6 +104,7 @@ router.get('/:id', (req, res) => {
     FROM orders o
     INNER JOIN users u ON o.user_id = u.user_id
     LEFT JOIN deliveries d ON o.order_id = d.order_id
+    LEFT JOIN riders r ON d.rider_id = r.rider_id
     LEFT JOIN payments p ON o.order_id = p.order_id
     WHERE o.order_id = ?
     ORDER BY p.payment_id ASC

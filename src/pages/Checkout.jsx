@@ -389,7 +389,7 @@ function Checkout() {
 
         const receiptData = await parseApiResponse(
           receiptResponse,
-          'Order created, but shipping receipt submission failed.'
+          `Order created, but shipping receipt submission failed.`
         )
 
         if (!receiptResponse.ok) {
@@ -829,7 +829,7 @@ function Checkout() {
             <span>Product Subtotal</span>
 
             <strong>
-              `₱${subtotal.toFixed(2)}`
+              ₱{subtotal.toFixed(2)}
             </strong>
           </div>
 
@@ -849,7 +849,7 @@ function Checkout() {
             <span>Total Order Amount</span>
 
             <strong>
-              `₱${total.toFixed(2)}`
+              ₱{total.toFixed(2)}
             </strong>
           </div>
 
