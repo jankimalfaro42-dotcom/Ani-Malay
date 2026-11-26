@@ -13,6 +13,7 @@ import {
   MapPin,
   Settings,
   ShieldCheck,
+  FileText,
   LogOut,
   ChevronRight,
   Wallet,
@@ -661,6 +662,12 @@ function MyAccount() {
       title: 'Security',
       description: 'Password and account security',
     },
+    {
+      id: 'terms-privacy',
+      icon: FileText,
+      title: 'Terms & Privacy',
+      description: 'Terms and conditions and privacy policy',
+    },
   ]
 
   const sectionTitles = {
@@ -670,6 +677,7 @@ function MyAccount() {
     notifications: 'Notifications',
     settings: 'Settings',
     security: 'Security',
+    'terms-privacy': 'Terms & Privacy',
   }
 
   const isDashboard = currentSection === 'profile'
@@ -1519,6 +1527,48 @@ function MyAccount() {
 
                 <ChevronRight size={19} />
               </button>
+            </div>
+          </section>
+        )}
+
+        {/* TERMS & PRIVACY */}
+        {currentSection === 'terms-privacy' && (
+          <section className="account-content-card">
+            <div className="account-content-heading">
+              <div>
+                <h2>Terms & Conditions and Privacy Policy</h2>
+                <p>Platform rules and how we protect your personal information.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+              <div style={{ padding: '16px', borderRadius: '10px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '8px', color: '#15803d', fontSize: '16px' }}>
+                  1. Terms and Conditions
+                </h3>
+                <p style={{ margin: '0 0 8px', fontSize: '13.5px', lineHeight: 1.6, color: '#374151' }}>
+                  By using <strong>Ani-Malay</strong>, you agree to provide accurate personal, contact, and delivery information for agricultural product orders within supported areas in and around the Municipality of Malay.
+                </p>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13.5px', lineHeight: 1.6, color: '#374151' }}>
+                  <li>Ensure your contact number and delivery address are accurate so orders can be delivered smoothly.</li>
+                  <li>Honor confirmed orders and payment terms upon delivery or checkout.</li>
+                  <li>Avoid fraudulent orders, false information, or unauthorized use of the platform.</li>
+                </ul>
+              </div>
+
+              <div style={{ padding: '16px', borderRadius: '10px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '8px', color: '#15803d', fontSize: '16px' }}>
+                  2. Privacy Policy
+                </h3>
+                <p style={{ margin: '0 0 8px', fontSize: '13.5px', lineHeight: 1.6, color: '#374151' }}>
+                  We value your privacy and handle your personal data in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173).
+                </p>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13.5px', lineHeight: 1.6, color: '#374151' }}>
+                  <li><strong>Data Collected:</strong> Full name, email address, mobile contact number, delivery addresses, and order details.</li>
+                  <li><strong>How It Is Used:</strong> For email OTP account verification, order fulfillment, delivery updates, and customer support.</li>
+                  <li><strong>Data Protection:</strong> Passwords are hashed and your information is never sold to unauthorized third parties.</li>
+                </ul>
+              </div>
             </div>
           </section>
         )}

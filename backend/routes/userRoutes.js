@@ -1,6 +1,7 @@
 const express = require('express')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
+const { Resend } = require('resend')
 const router = express.Router()
 const db = require('../db')
 const jwt = require('jsonwebtoken')
@@ -8,6 +9,40 @@ const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
 const authMiddleware = require('../middleware/authMiddleware')
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+const OTP_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Ani-Malay <onboarding@resend.dev>'
+
+const generateSixDigitOtp = () => String(crypto.randomInt(100000, 1000000))
+
+const sendOtpEmail = async ({ to, fullName, otp, isResend = false }) => {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is missing in environment variables.')
+  }
+
+  await resend.emails.send({
+    from: OTP_FROM_EMAIL,
+    to,
+    subject: isResend
+      ? 'Your New Ani-Malay Verification Code'
+      : 'Verify Your Ani-Malay Account (6-Digit OTP)',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+        <h2 style="margin-top: 0; color: #15803d;">Ani-Malay Email Verification</h2>
+        <p>Hello ${fullName || 'there'},</p>
+        <p>${
+          isResend
+            ? 'Here is your new 6-digit verification code:'
+            : 'Thank you for signing up for Ani-Malay. Use the 6-digit verification code below to activate your account:'
+        }</p>
+        <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; text-align: center; padding: 16px; margin: 20px 0; background: #f0fdf4; color: #166534; border-radius: 8px;">
+          ${otp}
+        </div>
+        <p style="font-size: 13px; color: #4b5563;">This code will expire in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.</p>
+      </div>
+    `,
+  })
+}
 
 // =====================================
 // PROFILE PICTURE UPLOAD CONFIGURATION
@@ -106,7 +141,8 @@ const authenticateUser = async (req, res, requiredRole) => {
           profile_picture,
           password,
           role,
-          status
+          status,
+          is_verified
         FROM users
         WHERE LOWER(email) = LOWER(?)
         LIMIT 1
@@ -123,7 +159,8 @@ const authenticateUser = async (req, res, requiredRole) => {
           profile_picture,
           password,
           role,
-          status
+          status,
+          is_verified
         FROM users
         WHERE contact_number = ?
            OR REPLACE(REPLACE(REPLACE(contact_number, ' ', ''), '-', ''), '+', '') = ?
@@ -150,6 +187,14 @@ const authenticateUser = async (req, res, requiredRole) => {
     if (!passwordMatch) {
       return res.status(401).json({
         message: 'Invalid email/mobile number or password',
+      })
+    }
+
+    if (user.role === 'consumer' && Number(user.is_verified) === 0) {
+      return res.status(403).json({
+        message: 'Please verify your email with the 6-digit OTP before logging in.',
+        requires_verification: true,
+        email: user.email,
       })
     }
 
@@ -280,6 +325,7 @@ router.get('/', (req, res) => {
       profile_picture,
       role,
       status,
+      is_verified,
       created_at
     FROM users
     WHERE 1 = 1
@@ -329,7 +375,8 @@ router.get('/', (req, res) => {
 })
 
 // =====================================
-// CREATE USER / CONSUMER REGISTRATION
+// CREATE USER / CONSUMER REGISTRATION + SEND OTP
+// POST /api/users
 // =====================================
 
 router.post('/', async (req, res) => {
@@ -342,61 +389,272 @@ router.post('/', async (req, res) => {
       password,
     } = req.body
 
-    if (!full_name || !email || !password) {
+    if (!full_name?.trim() || !email?.trim() || !password) {
       return res.status(400).json({
         message: 'Full name, email, and password are required',
       })
     }
 
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanFullName = full_name.trim()
+    const cleanContact = contact_number ? contact_number.trim() : ''
+    const cleanAddress = address ? address.trim() : ''
+
+    const [existingUsers] = await db.promise().query(
+      `
+        SELECT user_id, email, is_verified
+        FROM users
+        WHERE LOWER(email) = LOWER(?)
+        LIMIT 1
+      `,
+      [cleanEmail]
+    )
+
+    if (existingUsers.length > 0 && Number(existingUsers[0].is_verified) === 1) {
+      return res.status(409).json({
+        message: 'Email is already registered and verified.',
+      })
+    }
+
+    const otpCode = generateSixDigitOtp()
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const sql = `
-      INSERT INTO users
-      (
-        full_name,
-        email,
-        contact_number,
-        address,
-        password,
-        role,
-        status
+    await sendOtpEmail({
+      to: cleanEmail,
+      fullName: cleanFullName,
+      otp: otpCode,
+      isResend: false,
+    })
+
+    if (existingUsers.length > 0 && Number(existingUsers[0].is_verified) === 0) {
+      const existingId = existingUsers[0].user_id
+
+      await db.promise().query(
+        `
+          UPDATE users
+          SET
+            full_name = ?,
+            contact_number = ?,
+            address = ?,
+            password = ?,
+            is_verified = 0,
+            otp_code = ?,
+            otp_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+          WHERE user_id = ?
+        `,
+        [
+          cleanFullName,
+          cleanContact,
+          cleanAddress,
+          hashedPassword,
+          otpCode,
+          existingId,
+        ]
       )
-      VALUES (?, ?, ?, ?, ?, 'consumer', 'active')
-    `
 
-    const values = [
-      full_name,
-      email.trim(),
-      contact_number ? contact_number.trim() : null,
-      address || null,
-      hashedPassword,
-    ]
-
-    db.query(sql, values, (err, result) => {
-      if (err) {
-        console.error('Error adding user:', err)
-
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(409).json({
-            message: 'Email or contact number already exists',
-          })
-        }
-
-        return res.status(500).json({
-          message: 'Failed to add user',
-        })
-      }
-
-      res.status(201).json({
-        message: 'User added successfully',
-        user_id: result.insertId,
+      return res.status(200).json({
+        message: 'We sent a 6-digit OTP to your email.',
+        email: cleanEmail,
+        user_id: existingId,
+        requires_verification: true,
       })
+    }
+
+    const [result] = await db.promise().query(
+      `
+        INSERT INTO users
+        (
+          full_name,
+          email,
+          contact_number,
+          address,
+          password,
+          role,
+          status,
+          is_verified,
+          otp_code,
+          otp_expires_at
+        )
+        VALUES (?, ?, ?, ?, ?, 'consumer', 'active', 0, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))
+      `,
+      [
+        cleanFullName,
+        cleanEmail,
+        cleanContact,
+        cleanAddress,
+        hashedPassword,
+        otpCode,
+      ]
+    )
+
+    return res.status(201).json({
+      message: 'We sent a 6-digit OTP to your email.',
+      email: cleanEmail,
+      user_id: result.insertId,
+      requires_verification: true,
     })
   } catch (error) {
-    console.error('Password hashing error:', error)
+    console.error('Registration / OTP error:', error)
 
-    res.status(500).json({
-      message: 'Failed to add user',
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        message: 'Email or contact number already exists',
+      })
+    }
+
+    return res.status(500).json({
+      message: 'Failed to register or send OTP email. Please try again.',
+    })
+  }
+})
+
+// =====================================
+// VERIFY REGISTRATION 6-DIGIT OTP
+// POST /api/users/verify-registration-otp
+// =====================================
+
+router.post('/verify-registration-otp', async (req, res) => {
+  try {
+    const cleanEmail = String(req.body.email || '').trim().toLowerCase()
+    const cleanOtp = String(req.body.otp || req.body.code || '').trim()
+
+    if (!cleanEmail || !cleanOtp) {
+      return res.status(400).json({
+        message: 'Email and 6-digit OTP are required.',
+      })
+    }
+
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({
+        message: 'OTP must be a 6-digit number.',
+      })
+    }
+
+    const [rows] = await db.promise().query(
+      `
+        SELECT user_id, email, is_verified, otp_code, otp_expires_at
+        FROM users
+        WHERE LOWER(email) = LOWER(?)
+        LIMIT 1
+      `,
+      [cleanEmail]
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: 'Account not found.',
+      })
+    }
+
+    const user = rows[0]
+
+    if (Number(user.is_verified) === 1) {
+      return res.status(200).json({
+        message: 'Your email is already verified. You can now log in.',
+      })
+    }
+
+    if (!user.otp_code || String(user.otp_code).trim() !== cleanOtp) {
+      return res.status(400).json({
+        message: 'Invalid 6-digit OTP code.',
+      })
+    }
+
+    if (!user.otp_expires_at || new Date(user.otp_expires_at) < new Date()) {
+      return res.status(400).json({
+        message: 'OTP has expired. Please click Resend OTP.',
+      })
+    }
+
+    await db.promise().query(
+      `
+        UPDATE users
+        SET
+          is_verified = 1,
+          otp_code = NULL,
+          otp_expires_at = NULL
+        WHERE user_id = ?
+      `,
+      [user.user_id]
+    )
+
+    return res.json({
+      message: 'Email verified successfully! Redirecting to login...',
+    })
+  } catch (error) {
+    console.error('Verify registration OTP error:', error)
+    return res.status(500).json({
+      message: 'Failed to verify OTP.',
+    })
+  }
+})
+
+// =====================================
+// RESEND REGISTRATION 6-DIGIT OTP
+// POST /api/users/resend-registration-otp
+// =====================================
+
+router.post('/resend-registration-otp', async (req, res) => {
+  try {
+    const cleanEmail = String(req.body.email || '').trim().toLowerCase()
+
+    if (!cleanEmail) {
+      return res.status(400).json({
+        message: 'Email is required.',
+      })
+    }
+
+    const [rows] = await db.promise().query(
+      `
+        SELECT user_id, full_name, email, is_verified
+        FROM users
+        WHERE LOWER(email) = LOWER(?)
+        LIMIT 1
+      `,
+      [cleanEmail]
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: 'Account not found.',
+      })
+    }
+
+    const user = rows[0]
+
+    if (Number(user.is_verified) === 1) {
+      return res.status(400).json({
+        message: 'Account is already verified.',
+      })
+    }
+
+    const newOtp = generateSixDigitOtp()
+
+    await sendOtpEmail({
+      to: user.email,
+      fullName: user.full_name,
+      otp: newOtp,
+      isResend: true,
+    })
+
+    await db.promise().query(
+      `
+        UPDATE users
+        SET
+          otp_code = ?,
+          otp_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+        WHERE user_id = ?
+      `,
+      [newOtp, user.user_id]
+    )
+
+    return res.json({
+      message: 'A new 6-digit OTP has been sent to your email.',
+    })
+  } catch (error) {
+    console.error('Resend registration OTP error:', error)
+    return res.status(500).json({
+      message: 'Failed to resend OTP.',
     })
   }
 })
