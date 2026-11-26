@@ -1,6 +1,8 @@
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
+const fs = require('fs')
+const path = require('path')
 const db = require('./db')
 const productRoutes = require('./routes/productRoutes')
 const categoryRoutes = require('./routes/categoryRoutes')
@@ -13,7 +15,6 @@ const priceHistoryRoutes = require('./routes/priceHistoryRoutes')
 const reportRoutes = require('./routes/reportRoutes')
 const verificationRoutes = require('./routes/verificationRoutes')
 const cartRoutes = require('./routes/cartRoutes')
-const path = require('path')
 const riderRoutes = require('./routes/riderRoutes')
 const messageRoutes = require('./routes/messageRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
@@ -24,11 +25,10 @@ const PORT = process.env.PORT || 5000
 app.use(cors())
 app.use(express.json())
 
-// Serve uploaded product images
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, 'uploads'))
-)
+// Serve uploaded files consistently using process.cwd()
+const uploadsDir = path.join(process.cwd(), 'uploads')
+fs.mkdirSync(uploadsDir, { recursive: true })
+app.use('/uploads', express.static(uploadsDir))
 
 // API routes
 app.use('/api/notifications', notificationRoutes)
