@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react'
 import {
   Star,
@@ -13,7 +12,7 @@ import './AdminFeedbacks.css'
 const API_URL = 'https://ani-malay-production.up.railway.app/api/reviews'
 const SERVER_URL = 'https://ani-malay-production.up.railway.app'
 
-function getProfilePicture(path) {
+function getImageUrl(path) {
   if (!path) return null
 
   if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -21,6 +20,10 @@ function getProfilePicture(path) {
   }
 
   return `${SERVER_URL}/${path.replace(/^\/+/, '')}`
+}
+
+function getProfilePicture(path) {
+  return getImageUrl(path)
 }
 
 function AdminFeedbacks() {
@@ -94,8 +97,10 @@ function AdminFeedbacks() {
     setNotice('')
 
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(`${API_URL}/${reviewId}`, {
         method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
 
       const data = await response.json()
@@ -129,7 +134,25 @@ function AdminFeedbacks() {
     <div className="admin-feedbacks-page">
       <div className="admin-feedbacks-header">
         <div>
-          <h1>Customer Feedbacks</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1>Customer Feedbacks</h1>
+            {pendingCount > 0 && (
+              <span
+                className="feedback-new-badge"
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '2px 9px',
+                  borderRadius: '999px',
+                  lineHeight: 1.4,
+                }}
+              >
+                {pendingCount} New
+              </span>
+            )}
+          </div>
           <p>Review and manage customer ratings and comments.</p>
         </div>
 
@@ -166,6 +189,22 @@ function AdminFeedbacks() {
         <div className="feedback-toolbar-title">
           <MessageSquare size={20} />
           <h2>Review Submissions</h2>
+          {pendingCount > 0 && (
+            <span
+              className="feedback-new-badge"
+              style={{
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                fontSize: '12px',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '999px',
+                marginLeft: '6px',
+              }}
+            >
+              {pendingCount}
+            </span>
+          )}
         </div>
 
         <select
@@ -195,6 +234,7 @@ function AdminFeedbacks() {
         <div className="admin-review-list">
           {reviews.map((review) => {
             const profilePicture = getProfilePicture(review.profile_picture)
+            const reviewImages = Array.isArray(review.images) ? review.images : []
 
             return (
               <article className="admin-review-card" key={review.review_id}>
@@ -244,6 +284,49 @@ function AdminFeedbacks() {
                 <p className="admin-review-comment">
                   {review.comment || 'No written comment was provided.'}
                 </p>
+
+                {reviewImages.length > 0 && (
+                  <div
+                    className="admin-review-images"
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      margin: '10px 0',
+                    }}
+                  >
+                    {reviewImages.map((imgPath, index) => {
+                      const src = getImageUrl(imgPath)
+                      if (!src) return null
+
+                      return (
+                        <a
+                          key={`${review.review_id}-img-${index}`}
+                          href={src}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="View full image"
+                        >
+                          <img
+                            src={src}
+                            alt={`${review.product_name || 'Product'} review ${index + 1}`}
+                            className="admin-review-image"
+                            style={{
+                              width: '84px',
+                              height: '84px',
+                              objectFit: 'cover',
+                              borderRadius: '8px',
+                              border: '1px solid #e5e7eb',
+                            }}
+                            onError={(event) => {
+                              event.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        </a>
+                      )
+                    })}
+                  </div>
+                )}
 
                 <div className="admin-review-date">
                   Submitted:{' '}

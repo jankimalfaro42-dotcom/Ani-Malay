@@ -1,8 +1,55 @@
-
 const express = require('express')
 const router = express.Router()
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 const db = require('../db')
 const authMiddleware = require('../middleware/authMiddleware')
+
+// ===============================
+// MULTER CONFIG FOR MESSAGE IMAGES
+// Single image, JPG/PNG/WEBP, max 5MB
+// ===============================
+const messageUploadDir = path.join(process.cwd(), 'uploads', 'messages')
+fs.mkdirSync(messageUploadDir, { recursive: true })
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, messageUploadDir)
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase()
+    const uniqueName = `msg-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`
+    cb(null, uniqueName)
+  },
+})
+
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true)
+  } else {
+    cb(new Error('Only JPG, PNG, and WEBP images are allowed.'))
+  }
+}
+
+const uploadMessageImage = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+}).single('image')
+
+function cleanupUploadedFile(file) {
+  if (file?.path) {
+    fs.unlink(file.path, (unlinkErr) => {
+      if (unlinkErr) {
+        console.error('Failed to clean up message image:', unlinkErr)
+      }
+    })
+  }
+}
 
 // Require admin role for admin-only routes
 const requireAdmin = (req, res, next) => {
@@ -24,7 +71,14 @@ router.get('/conversations', authMiddleware, requireAdmin, (req, res) => {
       u.email,
       MAX(m.created_at) AS last_message_at,
       SUBSTRING_INDEX(
-        GROUP_CONCAT(m.message_text ORDER BY m.created_at DESC, m.message_id DESC),
+        GROUP_CONCAT(
+          CASE
+            WHEN m.message_text IS NOT NULL AND TRIM(m.message_text) <> '' THEN m.message_text
+            WHEN m.image_url IS NOT NULL AND TRIM(m.image_url) <> '' THEN '[Photo]'
+            ELSE ''
+          END
+          ORDER BY m.created_at DESC, m.message_id DESC
+        ),
         ',,',
         1
       ) AS latest_message,
@@ -111,6 +165,7 @@ router.get('/conversation/:userId', authMiddleware, (req, res) => {
       user_id,
       sender_role,
       message_text,
+      image_url,
       is_read,
       created_at
     FROM messages
@@ -149,7 +204,7 @@ router.get('/conversation/:userId', authMiddleware, (req, res) => {
   })
 })
 
-// CONSUMER SENDS A MESSAGE
+// CONSUMER SENDS A MESSAGE (Text and/or Image)
 router.post('/', authMiddleware, (req, res) => {
   if (req.user.role !== 'consumer') {
     return res.status(403).json({
@@ -157,45 +212,66 @@ router.post('/', authMiddleware, (req, res) => {
     })
   }
 
-  const messageText = String(req.body.message_text || '').trim()
+  uploadMessageImage(req, res, (uploadErr) => {
+    const uploadedFile = req.file || null
 
-  if (!messageText) {
-    return res.status(400).json({
-      message: 'Message cannot be empty',
-    })
-  }
+    if (uploadErr) {
+      cleanupUploadedFile(uploadedFile)
 
-  if (messageText.length > 5000) {
-    return res.status(400).json({
-      message: 'Message must not exceed 5000 characters',
-    })
-  }
+      if (uploadErr.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          message: 'Image must be 5 MB or smaller.',
+        })
+      }
 
-  const sql = `
-    INSERT INTO messages (user_id, sender_role, message_text)
-    VALUES (?, 'consumer', ?)
-  `
-
-  db.query(sql, [req.user.user_id, messageText], (err, result) => {
-    if (err) {
-      console.error('Send consumer message error:', err)
-
-      return res.status(500).json({
-        message: 'Failed to send message',
+      return res.status(400).json({
+        message: uploadErr.message || 'Image upload failed.',
       })
     }
 
-    res.status(201).json({
-      message: 'Message sent successfully',
-      message_id: result.insertId,
+    const messageText = String(req.body?.message_text || '').trim()
+    const imageUrl = `uploadedFile ? /uploads/messages/${uploadedFile.filename} : null`
+
+    if (!messageText && !imageUrl) {
+      return res.status(400).json({
+        message: 'Please enter a message or attach a picture.',
+      })
+    }
+
+    if (messageText.length > 5000) {
+      cleanupUploadedFile(uploadedFile)
+      return res.status(400).json({
+        message: 'Message must not exceed 5000 characters',
+      })
+    }
+
+    const sql = `
+      INSERT INTO messages (user_id, sender_role, message_text, image_url)
+      VALUES (?, 'consumer', ?, ?)
+    `
+
+    db.query(sql, [req.user.user_id, messageText, imageUrl], (err, result) => {
+      if (err) {
+        console.error('Send consumer message error:', err)
+        cleanupUploadedFile(uploadedFile)
+
+        return res.status(500).json({
+          message: 'Failed to send message',
+        })
+      }
+
+      res.status(201).json({
+        message: 'Message sent successfully',
+        message_id: result.insertId,
+        image_url: imageUrl,
+      })
     })
   })
 })
 
-// ADMIN REPLIES TO A CONSUMER
+// ADMIN REPLIES TO A CONSUMER (Text and/or Image)
 router.post('/:userId/reply', authMiddleware, requireAdmin, (req, res) => {
   const userId = Number(req.params.userId)
-  const messageText = String(req.body.message_text || '').trim()
 
   if (!Number.isInteger(userId) || userId <= 0) {
     return res.status(400).json({
@@ -203,57 +279,83 @@ router.post('/:userId/reply', authMiddleware, requireAdmin, (req, res) => {
     })
   }
 
-  if (!messageText) {
-    return res.status(400).json({
-      message: 'Reply cannot be empty',
-    })
-  }
+  uploadMessageImage(req, res, (uploadErr) => {
+    const uploadedFile = req.file || null
 
-  if (messageText.length > 5000) {
-    return res.status(400).json({
-      message: 'Reply must not exceed 5000 characters',
-    })
-  }
+    if (uploadErr) {
+      cleanupUploadedFile(uploadedFile)
 
-  db.query(
-    'SELECT user_id FROM users WHERE user_id = ? AND role = ? LIMIT 1',
-    [userId, 'consumer'],
-    (userErr, users) => {
-      if (userErr) {
-        console.error('Check consumer error:', userErr)
-
-        return res.status(500).json({
-          message: 'Failed to verify consumer',
+      if (uploadErr.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          message: 'Image must be 5 MB or smaller.',
         })
       }
 
-      if (users.length === 0) {
-        return res.status(404).json({
-          message: 'Consumer not found',
-        })
-      }
+      return res.status(400).json({
+        message: uploadErr.message || 'Image upload failed.',
+      })
+    }
 
-      db.query(
-        `INSERT INTO messages (user_id, sender_role, message_text)
-         VALUES (?, 'admin', ?)`,
-        [userId, messageText],
-        (err, result) => {
-          if (err) {
-            console.error('Admin reply error:', err)
+    const messageText = String(req.body?.message_text || '').trim()
+    const imageUrl = `uploadedFile ? /uploads/messages/${uploadedFile.filename} : null`
 
-            return res.status(500).json({
-              message: 'Failed to send reply',
-            })
-          }
+    if (!messageText && !imageUrl) {
+      return res.status(400).json({
+        message: 'Please enter a reply or attach a picture.',
+      })
+    }
 
-          res.status(201).json({
-            message: 'Reply sent successfully',
-            message_id: result.insertId,
+    if (messageText.length > 5000) {
+      cleanupUploadedFile(uploadedFile)
+      return res.status(400).json({
+        message: 'Reply must not exceed 5000 characters',
+      })
+    }
+
+    db.query(
+      'SELECT user_id FROM users WHERE user_id = ? AND role = ? LIMIT 1',
+      [userId, 'consumer'],
+      (userErr, users) => {
+        if (userErr) {
+          console.error('Check consumer error:', userErr)
+          cleanupUploadedFile(uploadedFile)
+
+          return res.status(500).json({
+            message: 'Failed to verify consumer',
           })
         }
-      )
-    }
-  )
+
+        if (users.length === 0) {
+          cleanupUploadedFile(uploadedFile)
+          return res.status(404).json({
+            message: 'Consumer not found',
+          })
+        }
+
+        db.query(
+          `INSERT INTO messages (user_id, sender_role, message_text, image_url)
+           VALUES (?, 'admin', ?, ?)`,
+          [userId, messageText, imageUrl],
+          (err, result) => {
+            if (err) {
+              console.error('Admin reply error:', err)
+              cleanupUploadedFile(uploadedFile)
+
+              return res.status(500).json({
+                message: 'Failed to send reply',
+              })
+            }
+
+            res.status(201).json({
+              message: 'Reply sent successfully',
+              message_id: result.insertId,
+              image_url: imageUrl,
+            })
+          }
+        )
+      }
+    )
+  })
 })
 
 // =========================================

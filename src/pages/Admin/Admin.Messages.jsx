@@ -4,11 +4,25 @@ import {
   MessageCircle,
   Send,
   RefreshCw,
+  ImagePlus,
+  X,
 } from 'lucide-react'
 import './AdminMessages.css'
 
 const API_URL = 'https://ani-malay-production.up.railway.app/api/messages'
 const USERS_API_URL = 'https://ani-malay-production.up.railway.app/api/users'
+const SERVER_URL = 'https://ani-malay-production.up.railway.app'
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024
+
+function getImageUrl(path) {
+  if (!path) return null
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+
+  return `${SERVER_URL}/${path.replace(/^\/+/, '')}`
+}
 
 function AdminMessages() {
   const location = useLocation()
@@ -26,6 +40,7 @@ function AdminMessages() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [messages, setMessages] = useState([])
   const [replyText, setReplyText] = useState('')
+  const [selectedImage, setSelectedImage] = useState(null)
   const [loadingConversations, setLoadingConversations] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sending, setSending] = useState(false)
@@ -77,6 +92,15 @@ function AdminMessages() {
 
     return () => clearInterval(interval)
   }, [fetchAdminPresence])
+
+  // CLEAN UP PREVIEW ON UNMOUNT
+  useEffect(() => {
+    return () => {
+      if (selectedImage?.preview) {
+        URL.revokeObjectURL(selectedImage.preview)
+      }
+    }
+  }, [selectedImage])
 
   // RESOLVE TARGET CONSUMER IF NOT YET IN CONVERSATIONS LIST
   const resolveTargetConsumer = useCallback(
@@ -242,31 +266,85 @@ function AdminMessages() {
     setError('')
   }
 
-  // SEND ADMIN REPLY
+  const handleImageSelect = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setError('JPG, PNG, o WEBP lang ang puwedeng i-attach.')
+      return
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setError('Hanggang 5 MB lang ang maximum size ng picture.')
+      return
+    }
+
+    if (selectedImage?.preview) {
+      URL.revokeObjectURL(selectedImage.preview)
+    }
+
+    setError('')
+    setSelectedImage({
+      file,
+      preview: URL.createObjectURL(file),
+    })
+  }
+
+  const clearSelectedImage = () => {
+    if (selectedImage?.preview) {
+      URL.revokeObjectURL(selectedImage.preview)
+    }
+    setSelectedImage(null)
+  }
+
+  // SEND ADMIN REPLY (Text and/or Image)
   const handleReply = async (event) => {
     event.preventDefault()
 
     const text = replyText.trim()
 
-    if (!text || !selectedUser || sending) return
+    if ((!text && !selectedImage) || !selectedUser || sending) return
 
     setSending(true)
     setError('')
 
     try {
-      const response = await fetch(
-        `${API_URL}/${selectedUser.user_id}/reply`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            message_text: text,
-          }),
-        }
-      )
+      let response
+
+      if (selectedImage?.file) {
+        const formData = new FormData()
+        formData.append('message_text', text)
+        formData.append('image', selectedImage.file)
+
+        response = await fetch(
+          `${API_URL}/${selectedUser.user_id}/reply`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        )
+      } else {
+        response = await fetch(
+          `${API_URL}/${selectedUser.user_id}/reply`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              message_text: text,
+            }),
+          }
+        )
+      }
 
       const data = await response.json()
 
@@ -277,6 +355,7 @@ function AdminMessages() {
       }
 
       setReplyText('')
+      clearSelectedImage()
 
       await fetchMessages(selectedUser.user_id)
       await fetchConversations()
@@ -443,32 +522,108 @@ function AdminMessages() {
                     Wala pang messages sa conversation na ito.
                   </p>
                 ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.message_id}
-                      className={`admin-chat-bubble ${
-                        message.sender_role === 'admin'
-                          ? 'admin-chat-own'
-                          : 'admin-chat-consumer'
-                      }`}
-                    >
-                      <span>
-                        {message.sender_role === 'admin'
-                          ? 'Ani-Malay Admin'
-                          : selectedUser.full_name || 'Consumer'}
-                      </span>
+                  messages.map((message) => {
+                    const imageUrl = getImageUrl(message.image_url)
 
-                      <p>{message.message_text}</p>
+                    return (
+                      <div
+                        key={message.message_id}
+                        className={`admin-chat-bubble ${
+                          message.sender_role === 'admin'
+                            ? 'admin-chat-own'
+                            : 'admin-chat-consumer'
+                        }`}
+                      >
+                        <span>
+                          {message.sender_role === 'admin'
+                            ? 'Ani-Malay Admin'
+                            : selectedUser.full_name || 'Consumer'}
+                        </span>
 
-                      <time>
-                        {new Date(
-                          message.created_at
-                        ).toLocaleString()}
-                      </time>
-                    </div>
-                  ))
+                        {imageUrl && (
+                          <a
+                            href={imageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="View full image"
+                            style={{ display: 'inline-block', marginTop: '6px' }}
+                          >
+                            <img
+                              src={imageUrl}
+                              alt="Attached message"
+                              style={{
+                                maxWidth: '220px',
+                                maxHeight: '220px',
+                                borderRadius: '10px',
+                                objectFit: 'cover',
+                                display: 'block',
+                              }}
+                              onError={(event) => {
+                                event.currentTarget.style.display = 'none'
+                              }}
+                            />
+                          </a>
+                        )}
+
+                        {message.message_text && (
+                          <p>{message.message_text}</p>
+                        )}
+
+                        <time>
+                          {new Date(
+                            message.created_at
+                          ).toLocaleString()}
+                        </time>
+                      </div>
+                    )
+                  })
                 )}
               </div>
+
+              {/* SELECTED IMAGE PREVIEW */}
+              {selectedImage && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    margin: '0 16px 8px',
+                    borderRadius: '10px',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  <img
+                    src={selectedImage.preview}
+                    alt="Preview"
+                    style={{
+                      width: '52px',
+                      height: '52px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <span style={{ fontSize: '13px', color: '#374151' }}>
+                    {selectedImage.file.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearSelectedImage}
+                    aria-label="Remove attached image"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#dc2626',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
 
               {/* REPLY FORM */}
               <form
@@ -483,20 +638,54 @@ function AdminMessages() {
                   placeholder="I-type ang reply sa consumer..."
                   rows={2}
                   maxLength={5000}
-                  required
                 />
 
-                <button
-                  type="submit"
-                  disabled={
-                    sending ||
-                    !replyText.trim() ||
-                    !token
-                  }
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                  }}
                 >
-                  <Send size={17} />
-                  {sending ? 'Sending...' : 'Send Reply'}
-                </button>
+                  <label
+                    title="Attach picture"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: '#ffffff',
+                      color: '#1f2937',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <ImagePlus size={18} />
+                    <span>Photo</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      sending ||
+                      (!replyText.trim() && !selectedImage) ||
+                      !token
+                    }
+                  >
+                    <Send size={17} />
+                    {sending ? 'Sending...' : 'Send Reply'}
+                  </button>
+                </div>
               </form>
             </>
           )}

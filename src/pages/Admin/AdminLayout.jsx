@@ -25,6 +25,7 @@ function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0)
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
+  const [pendingFeedbacksCount, setPendingFeedbacksCount] = useState(0)
 
   const token = localStorage.getItem('token')
 
@@ -187,6 +188,49 @@ function AdminLayout() {
     }
   }, [token])
 
+  // NEW / PENDING FEEDBACKS BADGE COUNT
+  useEffect(() => {
+    if (!token) return
+
+    let isMounted = true
+
+    const fetchPendingFeedbacksCount = async () => {
+      try {
+        const res = await fetch(`${BASE_API_URL}/reviews?status=pending`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!res.ok) return
+
+        const data = await res.json()
+        const reviewsList = Array.isArray(data)
+          ? data
+          : Array.isArray(data.reviews)
+          ? data.reviews
+          : []
+
+        if (isMounted) {
+          setPendingFeedbacksCount(reviewsList.length)
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to fetch pending feedbacks count:', error)
+        }
+      }
+    }
+
+    fetchPendingFeedbacksCount()
+
+    const interval = setInterval(fetchPendingFeedbacksCount, 20000)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [token])
+
   const navItems = [
     {
       to: '/admin',
@@ -235,6 +279,7 @@ function AdminLayout() {
       to: '/admin/feedbacks',
       label: 'Feedbacks',
       icon: MessageSquare,
+      badge: pendingFeedbacksCount,
     },
     {
       to: '/admin/settings',

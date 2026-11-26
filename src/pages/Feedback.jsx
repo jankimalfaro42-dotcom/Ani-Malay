@@ -23,7 +23,7 @@ const CATEGORIES = [
   { label: 'Fisheries', value: 'fisheries' },
 ]
 
-function getProfilePicture(path) {
+function getImageUrl(path) {
   if (!path) return null
 
   if (path.startsWith('http://') || path.startsWith('https://')) {
@@ -31,6 +31,10 @@ function getProfilePicture(path) {
   }
 
   return `${SERVER_URL}/${path.replace(/^\/+/, '')}`
+}
+
+function getProfilePicture(path) {
+  return getImageUrl(path)
 }
 
 function getToken() {
@@ -280,17 +284,23 @@ function Feedback() {
     setSubmitting(true)
 
     try {
+      const formData = new FormData()
+      formData.append('product_id', String(Number(product)))
+      formData.append('rating', String(Number(rating)))
+      formData.append('comment', comment.trim())
+
+      images.forEach((item) => {
+        if (item?.file) {
+          formData.append('images', item.file)
+        }
+      })
+
       const response = await fetch(`${API_URL}/reviews`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          product_id: Number(product),
-          rating: Number(rating),
-          comment: comment.trim(),
-        }),
+        body: formData,
       })
 
       const data = await response.json()
@@ -386,6 +396,7 @@ function Feedback() {
   // ===============================
   const renderReviewCard = (review, showStatus = false) => {
     const profilePicture = getProfilePicture(review.profile_picture)
+    const reviewImages = Array.isArray(review.images) ? review.images : []
 
     return (
       <article className="feedback-review-card" key={review.review_id}>
@@ -439,6 +450,27 @@ function Feedback() {
         <p className="feedback-review-comment">
           {review.comment || 'No written comment was provided.'}
         </p>
+
+        {reviewImages.length > 0 && (
+          <div className="feedback-review-images">
+            {reviewImages.map((imgPath, index) => {
+              const src = getImageUrl(imgPath)
+              if (!src) return null
+
+              return (
+                <img
+                  key={`${review.review_id}-img-${index}`}
+                  src={src}
+                  alt={`${review.product_name || 'Product'} review ${index + 1}`}
+                  className="feedback-review-image"
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none'
+                  }}
+                />
+              )
+            })}
+          </div>
+        )}
 
         {showStatus && (
           <div className="feedback-my-review-actions">
