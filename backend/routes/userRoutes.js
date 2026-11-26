@@ -10,15 +10,20 @@ const path = require('path')
 const fs = require('fs')
 const authMiddleware = require('../middleware/authMiddleware')
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const OTP_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Ani-Malay <onboarding@resend.dev>'
 
 const generateSixDigitOtp = () => String(crypto.randomInt(100000, 1000000))
 
-const sendOtpEmail = async ({ to, fullName, otp, isResend = false }) => {
-  if (!process.env.RESEND_API_KEY) {
+const getResendClient = () => {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  if (!apiKey) {
     throw new Error('RESEND_API_KEY is missing in environment variables.')
   }
+  return new Resend(apiKey)
+}
+
+const sendOtpEmail = async ({ to, fullName, otp, isResend = false }) => {
+  const resend = getResendClient()
 
   await resend.emails.send({
     from: OTP_FROM_EMAIL,
@@ -350,16 +355,16 @@ router.get('/', (req, res) => {
   }
 
   if (role) {
-    sql +=  `AND role = ?`
+    sql += ` AND role = ?`
     values.push(role)
   }
 
   if (status) {
-    sql +=  `AND status = ?`
+    sql += ` AND status = ?`
     values.push(status)
   }
 
-  sql +=  `ORDER BY user_id DESC`
+  sql += ` ORDER BY user_id DESC`
 
   db.query(sql, values, (err, results) => {
     if (err) {
