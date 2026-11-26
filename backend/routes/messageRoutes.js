@@ -299,7 +299,9 @@ router.post('/:userId/reply', authMiddleware, requireAdmin, (req, res) => {
     }
 
     const messageText = String(req.body?.message_text || '').trim()
-    const imageUrl = `uploadedFile ? /uploads/messages/${uploadedFile.filename} : null`
+    const imageUrl = uploadedFile
+  ? `/uploads/messages/${uploadedFile.filename}`
+  : null
 
     if (!messageText && !imageUrl) {
       return res.status(400).json({
