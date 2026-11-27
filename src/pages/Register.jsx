@@ -433,44 +433,97 @@ function Register() {
               </div>
 
               {/* TERMS & PRIVACY AGREEMENT */}
-              <div className="form-group" style={{ marginTop: '10px', marginBottom: '14px' }}>
-                <label
+              <div
+                style={{
+                  marginTop: '12px',
+                  marginBottom: '16px',
+                  padding: '10px 12px',
+                  backgroundColor: '#f8faf8',
+                  border: '1px solid #d1e2d4',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  textAlign: 'left',
+                }}
+              >
+                <input
+                  id="agree-terms-checkbox"
+                  type="checkbox"
+                  checked={agreedTerms}
+                  onChange={(e) => setAgreedTerms(e.target.checked)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '8px',
-                    fontSize: '12.5px',
-                    lineHeight: 1.45,
+                    width: '16px',
+                    height: '16px',
+                    margin: '2px 0 0 0',
+                    flex: '0 0 16px',
+                    accentColor: '#1f4e28',
                     cursor: 'pointer',
                   }}
+                />
+
+                <div
+                  style={{
+                    fontSize: '12.5px',
+                    lineHeight: 1.5,
+                    color: '#374151',
+                    textAlign: 'left',
+                  }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={agreedTerms}
-                    onChange={(e) => setAgreedTerms(e.target.checked)}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <span>
+                  <label
+                    htmlFor="agree-terms-checkbox"
+                    style={{
+                      display: 'inline',
+                      margin: 0,
+                      padding: 0,
+                      fontWeight: 400,
+                      color: 'inherit',
+                      cursor: 'pointer',
+                    }}
+                  >
                     I agree to the{' '}
-                    <button
-                      type="button"
-                      onClick={() => setShowPolicyModal(true)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        color: '#15803d',
-                        textDecoration: 'underline',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        fontSize: 'inherit',
-                      }}
-                    >
-                      Terms and Conditions and Privacy Policy
-                    </button>
-                    .
-                  </span>
-                </label>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPolicyModal(true)}
+                    style={{
+                      display: 'inline',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      margin: 0,
+                      color: '#1f4e28',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '2px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: 'inherit',
+                    }}
+                  >
+                    Terms and Conditions
+                  </button>{' '}
+                  <span style={{ color: '#4b5563' }}>and</span>{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowPolicyModal(true)}
+                    style={{
+                      display: 'inline',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      margin: 0,
+                      color: '#1f4e28',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '2px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: 'inherit',
+                    }}
+                  >
+                    Privacy Policy
+                  </button>
+                  .
+                </div>
               </div>
 
               {/* ERROR */}
@@ -642,7 +695,7 @@ function Register() {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backgroundColor: 'rgba(0, 0, 0, 0.58)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -654,26 +707,39 @@ function Register() {
             style={{
               backgroundColor: '#ffffff',
               color: '#111827',
-              borderRadius: '12px',
+              borderRadius: '14px',
               maxWidth: '520px',
               width: '100%',
               maxHeight: '80vh',
               overflowY: 'auto',
               padding: '22px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              boxShadow: '0 14px 34px rgba(0, 0, 0, 0.24)',
+              textAlign: 'left',
             }}
           >
-            <h3 style={{ marginTop: 0, color: '#15803d' }}>
-              Ani-Malay Terms and Conditions & Privacy Policy
-            </h3>
+            <div
+              style={{
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '10px',
+                marginBottom: '14px',
+              }}
+            >
+              <h3 style={{ margin: 0, color: '#1f4e28', fontSize: '18px' }}>
+                Ani-Malay Terms and Conditions & Privacy Policy
+              </h3>
+            </div>
 
-            <h4 style={{ marginBottom: '6px' }}>1. Terms and Conditions</h4>
-            <p style={{ fontSize: '13px', lineHeight: 1.55, color: '#374151', marginTop: 0 }}>
+            <h4 style={{ margin: '0 0 6px 0', color: '#111827', fontSize: '14px' }}>
+              1. Terms and Conditions
+            </h4>
+            <p style={{ fontSize: '13px', lineHeight: 1.55, color: '#374151', margin: '0 0 14px 0' }}>
               By registering on Ani-Malay, you agree to provide accurate and truthful personal, contact, and delivery details. You agree to use the platform lawfully for ordering agricultural products within supported areas and to honor confirmed orders and payment terms. Misuse, fraudulent activity, or account abuse may result in account suspension or deactivation.
             </p>
 
-            <h4 style={{ marginBottom: '6px' }}>2. Privacy Policy</h4>
-            <p style={{ fontSize: '13px', lineHeight: 1.55, color: '#374151', marginTop: 0 }}>
+            <h4 style={{ margin: '0 0 6px 0', color: '#111827', fontSize: '14px' }}>
+              2. Privacy Policy
+            </h4>
+            <p style={{ fontSize: '13px', lineHeight: 1.55, color: '#374151', margin: 0 }}>
               Ani-Malay collects your full name, email address, contact number, and delivery address strictly to verify your account, process and deliver orders, provide customer notifications, and maintain platform security. Your personal information is protected and is not sold to unauthorized third parties.
             </p>
 
@@ -682,7 +748,9 @@ function Register() {
                 display: 'flex',
                 justifyContent: 'flex-end',
                 gap: '10px',
-                marginTop: '18px',
+                marginTop: '20px',
+                paddingTop: '12px',
+                borderTop: '1px solid #f3f4f6',
               }}
             >
               <button
@@ -690,9 +758,11 @@ function Register() {
                 onClick={() => setShowPolicyModal(false)}
                 style={{
                   padding: '8px 14px',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   border: '1px solid #d1d5db',
                   backgroundColor: '#fff',
+                  color: '#374151',
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
@@ -706,9 +776,9 @@ function Register() {
                 }}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   border: 'none',
-                  backgroundColor: '#15803d',
+                  backgroundColor: '#1f4e28',
                   color: '#fff',
                   fontWeight: 600,
                   cursor: 'pointer',
