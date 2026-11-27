@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { notify } from "../utils/notify";
 import "../App.css";
@@ -39,12 +39,51 @@ const trackingSteps = [
   },
 ];
 
+function decodeJwtPayload(token) {
+  if (!token || typeof token !== "string") return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "="
+    );
+    const jsonStr = atob(padded);
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+}
+
+function getCurrentUserId(token) {
+  try {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      const idFromUser =
+        parsedUser?.user_id ?? parsedUser?.id ?? parsedUser?.user?.user_id;
+      if (idFromUser) {
+        return Number(idFromUser);
+      }
+    }
+  } catch {
+    // Fallback to JWT token below
+  }
+
+  const payload = decodeJwtPayload(token);
+  const idFromToken = payload?.user_id ?? payload?.id ?? payload?.sub;
+  return idFromToken ? Number(idFromToken) : null;
+}
+
 function Orders() {
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [detailsLoading, setDetailsLoading] = useState(null);
 
   const [orderToCancel, setOrderToCancel] = useState(null);
@@ -52,16 +91,17 @@ function Orders() {
 
   const token = localStorage.getItem("token");
 
-  const fetchOrdersList = async () => {
-    const savedUser = localStorage.getItem("user");
-    if (!savedUser) {
+  const fetchOrdersList = useCallback(async () => {
+    setErrorMessage("");
+    const activeUserId = getCurrentUserId(token);
+
+    if (!activeUserId) {
       setOrders([]);
       return;
     }
 
-    const user = JSON.parse(savedUser);
     const response = await fetch(
-      `${API_BASE_URL}/api/orders?user_id=${user.user_id}`,
+      `${API_BASE_URL}/api/orders?user_id=${encodeURIComponent(activeUserId)}`,
       {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       }
@@ -72,21 +112,40 @@ function Orders() {
     }
 
     const data = await response.json();
-    setOrders(Array.isArray(data) ? data : []);
-  };
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.orders)
+        ? data.orders
+        : [];
+
+    setOrders(list);
+  }, [token]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadOrders = async () => {
       try {
         await fetchOrdersList();
       } catch (error) {
         console.error("Failed to load orders:", error);
+        if (isMounted) {
+          setErrorMessage("Unable to load your orders right now.");
+          setOrders([]);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+
     loadOrders();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchOrdersList]);
 
   const viewOrder = async (orderId) => {
     if (selectedOrder?.order?.order_id === orderId) {
@@ -148,7 +207,7 @@ function Orders() {
       };
 
       let response = await fetch(
-        `${API_BASE_URL}/api/orders/${targetOrder.order_id}/cancel` ,
+        `${API_BASE_URL}/api/orders/${targetOrder.order_id}/cancel`,
         {
           method: "PATCH",
           headers,
@@ -334,6 +393,13 @@ function Orders() {
         ← Back
       </button>
       <h2>My Orders</h2>
+
+      {errorMessage && (
+        <p className="error-message" style={{ marginBottom: "12px" }}>
+          {errorMessage}
+        </p>
+      )}
+
       {orders.length === 0 ? (
         <div className="empty-orders">
           <h3>No Orders Yet</h3>
