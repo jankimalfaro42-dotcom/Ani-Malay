@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { notify } from "../utils/notify";
 import "../App.css";
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_URL || "").trim() ||
-  "https://ani-malay-production.up.railway.app";
+const API_BASE_URL = "https://ani-malay-production.up.railway.app";
 
 const trackingSteps = [
   {
@@ -424,7 +422,7 @@ function Orders() {
               <div className="order-card" key={order.order_id}>
                 <div className="order-card-header">
                   <h3>
-                    `Order #AM-${String(order.order_id).padStart(4, "0")}`
+                    Order #AM-{String(order.order_id).padStart(4, "0")}
                   </h3>
                   <span
                     className={`order-status ${order.status || "pending"}`}
@@ -501,7 +499,7 @@ function Orders() {
                 {isExpanded && detailOrder && (
                   <div className="order-details-dropdown">
                     <h3>
-                      `Order #AM-${String(detailOrder.order_id).padStart(4, "0")}`
+                      Order #AM-{String(detailOrder.order_id).padStart(4, "0")}
                     </h3>
                     {renderTracking(detailOrder.status)}
                     <div className="order-detail-section">
