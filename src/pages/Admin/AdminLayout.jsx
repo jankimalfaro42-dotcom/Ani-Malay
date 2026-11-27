@@ -26,6 +26,8 @@ function AdminLayout() {
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0)
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
   const [pendingFeedbacksCount, setPendingFeedbacksCount] = useState(0)
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const token = localStorage.getItem('token')
 
@@ -288,12 +290,20 @@ function AdminLayout() {
     },
   ]
 
-  const handleLogout = async () => {
-    const confirmed = window.confirm(
-      'Are you sure you want to log out?'
-    )
+  const openLogoutModal = () => {
+    if (loggingOut) return
+    setMenuOpen(false)
+    setLogoutModalOpen(true)
+  }
 
-    if (!confirmed) return
+  const closeLogoutModal = () => {
+    if (loggingOut) return
+    setLogoutModalOpen(false)
+  }
+
+  const confirmLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
 
     try {
       if (token) {
@@ -302,6 +312,7 @@ function AdminLayout() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          keepalive: true,
         })
       }
     } catch (error) {
@@ -427,10 +438,11 @@ function AdminLayout() {
           <button
             type="button"
             className="admin-layout-logout"
-            onClick={handleLogout}
+            onClick={openLogoutModal}
+            disabled={loggingOut}
           >
             <LogOut size={18} />
-            <span>Log Out</span>
+            <span>{loggingOut ? 'Logging Out...' : 'Log Out'}</span>
           </button>
         </div>
 
@@ -440,6 +452,105 @@ function AdminLayout() {
       <main className="admin-layout-content">
         <Outlet />
       </main>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {logoutModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="adminLogoutModalTitle"
+          onClick={closeLogoutModal}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '400px',
+              backgroundColor: '#ffffff',
+              borderRadius: '14px',
+              padding: '22px',
+              boxShadow: '0 20px 45px rgba(0, 0, 0, 0.22)',
+              color: '#1e293b',
+            }}
+          >
+            <h3
+              id="adminLogoutModalTitle"
+              style={{
+                margin: '0 0 10px',
+                fontSize: '1.15rem',
+                fontWeight: 700,
+                color: '#0f172a',
+              }}
+            >
+              Confirm Log Out
+            </h3>
+
+            <p
+              style={{
+                margin: '0 0 18px',
+                fontSize: '0.94rem',
+                lineHeight: 1.5,
+                color: '#475569',
+              }}
+            >
+              Are you sure you want to log out of your Ani-Malay Admin account?
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeLogoutModal}
+                disabled={loggingOut}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  color: '#334155',
+                  fontWeight: 600,
+                  cursor: loggingOut ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmLogout}
+                disabled={loggingOut}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  cursor: loggingOut ? 'not-allowed' : 'pointer',
+                  opacity: loggingOut ? 0.65 : 1,
+                }}
+              >
+                {loggingOut ? 'Logging Out...' : 'Log Out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
