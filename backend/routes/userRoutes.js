@@ -49,6 +49,27 @@ const sendOtpEmail = async ({ to, fullName, otp, isResend = false }) => {
   })
 }
 
+const sendPasswordResetOtpEmail = async ({ to, fullName, otp }) => {
+  const resend = getResendClient()
+
+  await resend.emails.send({
+    from: OTP_FROM_EMAIL,
+    to,
+    subject: 'Ani-Malay Password Reset Code (6-Digit OTP)',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px;">
+        <h2 style="margin-top: 0; color: #15803d;">Ani-Malay Password Reset</h2>
+        <p>Hello ${fullName || 'there'},</p>
+        <p>We received a request to reset your Ani-Malay password. Use the 6-digit verification code below:</p>
+        <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; text-align: center; padding: 16px; margin: 20px 0; background: #f0fdf4; color: #166534; border-radius: 8px;">
+          ${otp}
+        </div>
+        <p style="font-size: 13px; color: #4b5563;">This code will expire in <strong>10 minutes</strong>. If you did not request a password reset, you can safely ignore this email.</p>
+      </div>
+    `,
+  })
+}
+
 // =====================================
 // PROFILE PICTURE UPLOAD CONFIGURATION
 // =====================================
@@ -989,7 +1010,7 @@ router.post(
 )
 
 // =====================================
-// FORGOT PASSWORD - SEND 6-DIGIT OTP
+// FORGOT PASSWORD - SEND 6-DIGIT OTP VIA RESEND
 // POST /api/users/forgot-password
 // =====================================
 
@@ -1039,10 +1060,21 @@ router.post('/forgot-password', async (req, res) => {
       })
     }
 
-    const otpCode = String(crypto.randomInt(100000, 1000000))
-    const verificationTarget = isEmail
-      ? user.email
-      : (user.contact_number || cleanTarget)
+    const userEmail = String(user.email || '').trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
+      return res.status(400).json({
+        message: 'No valid email address is linked to this account for OTP delivery.',
+      })
+    }
+
+    const otpCode = generateSixDigitOtp()
+    const verificationTarget = userEmail
+
+    await sendPasswordResetOtpEmail({
+      to: userEmail,
+      fullName: user.full_name,
+      otp: otpCode,
+    })
 
     const [insertResult] = await db.promise().query(
       `
@@ -1055,17 +1087,16 @@ router.post('/forgot-password', async (req, res) => {
     )
 
     return res.json({
-      message: 'A 6-digit verification code has been generated.',
+      message: 'A 6-digit verification code has been sent to your email.',
       user_id: user.user_id,
       verification_id: insertResult.insertId,
       target: verificationTarget,
       expires_in_minutes: 10,
-      dev_otp: otpCode,
     })
   } catch (error) {
     console.error('Forgot password error:', error)
     return res.status(500).json({
-      message: 'Failed to process request',
+      message: 'Failed to send password reset OTP email. Please try again.',
     })
   }
 })
